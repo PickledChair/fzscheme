@@ -1,3 +1,7 @@
+//
+// object.c
+//
+
 typedef enum ObjectTag {
   OBJ_TAG_CELL,
   OBJ_TAG_INTEGER,
@@ -25,3 +29,11 @@ struct Object {
 
 #define CAR(obj) (obj)->fields_of.cell.car
 #define CDR(obj) (obj)->fields_of.cell.cdr
+
+Object *new_cell_obj(Object *car, Object *cdr);
+Object *new_integer_obj(long value);
+Object *new_string_obj(char *value);
+void free_obj(Object *obj);
+void print_obj(Object *obj);
+
+extern Object *NIL;
