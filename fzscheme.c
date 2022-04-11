@@ -3,6 +3,12 @@
 #include <string.h>
 
 int main(void) {
+  char *source = "123 \"piyo\" \"hoge huga\" (3 2 1)";
+  Token *tokens = tokenize(source);
+  for (Token *cur = tokens; cur != NULL; cur = cur->next)
+    print_token(cur);
+  free_token(tokens);
+
   Object *int_obj = new_integer_obj(42);
   print_obj(int_obj);
   putchar('\n');

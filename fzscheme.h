@@ -1,3 +1,5 @@
+#include <stdint.h>
+
 //
 // object.c
 //
@@ -37,3 +39,28 @@ void free_obj(Object *obj);
 void print_obj(Object *obj);
 
 extern Object *NIL;
+
+//
+// tokenize.c
+//
+
+typedef enum {
+  TK_INT,
+  TK_LPAREN,
+  TK_RPAREN,
+  TK_STR,
+} TokenTag;
+
+typedef struct Token Token;
+struct Token {
+  TokenTag tag;
+  Token *next;
+  char *loc;
+  int len;
+  int64_t val;
+  char *str;
+};
+
+Token *tokenize(char *input);
+void print_token(Token *tok);
+void free_token(Token *tok);
