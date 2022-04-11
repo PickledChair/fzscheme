@@ -67,9 +67,9 @@ void print_obj(Object *obj) {
   switch (obj->tag) {
   case OBJ_TAG_CELL:
     putchar('(');
-    for (Object **cur = &obj; *cur != NIL; cur = &(CDR(*cur))) {
-      print_obj(CAR(*cur));
-      if (CDR(*cur) != NIL)
+    for (Object *cur = obj; cur != NIL; cur = CDR(cur)) {
+      print_obj(CAR(cur));
+      if (CDR(cur) != NIL)
         putchar(' ');
     }
     putchar(')');
