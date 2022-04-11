@@ -2,7 +2,6 @@ SRCS=$(wildcard *.c)
 OBJS=$(SRCS: .c=.o)
 
 fzscheme: $(OBJS)
-	$(CC) $(CFLAGS) -o fzscheme $(OBJS) $(LDFLAGS)
 
 $(OBJS): fzscheme.h
 
@@ -12,4 +11,5 @@ run: fzscheme
 
 .PHONY: clean
 clean:
+	-rm *.o
 	-rm fzscheme
