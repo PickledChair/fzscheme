@@ -1,5 +1,4 @@
 #include "fzscheme.h"
-#include <stdio.h>
 #include <string.h>
 
 Object *parse_objs(Token **tok) {

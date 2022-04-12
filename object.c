@@ -1,7 +1,6 @@
 #include "fzscheme.h"
 #include <stdio.h>
 #include <stdlib.h>
-#include <string.h>
 
 Object *NIL = &(Object){OBJ_CELL};
 
