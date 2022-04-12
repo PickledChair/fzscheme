@@ -5,9 +5,9 @@
 //
 
 typedef enum ObjectTag {
-  OBJ_TAG_CELL,
-  OBJ_TAG_INTEGER,
-  OBJ_TAG_STRING,
+  OBJ_CELL,
+  OBJ_INTEGER,
+  OBJ_STRING,
 } ObjectTag;
 
 typedef struct Object Object;
@@ -64,3 +64,10 @@ struct Token {
 Token *tokenize(char *input);
 void print_token(Token *tok);
 void free_token(Token *tok);
+
+//
+// parse.c
+//
+
+Object *parse_obj(Token **tok);
+Object *parse_objs(Token **tok);

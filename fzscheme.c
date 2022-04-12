@@ -1,31 +1,32 @@
 #include "fzscheme.h"
 #include <stdio.h>
-#include <string.h>
 
 int main(void) {
-  char *source = "123 \"piyo\" \"hoge huga\" (3 2 1)";
-  Token *tokens = tokenize(source);
-  for (Token *cur = tokens; cur != NULL; cur = cur->next)
-    print_token(cur);
-  free_token(tokens);
+  char *srcs[] = {
+    "42",
+    "\"Hello, world!\"",
+    "(1 2 3)",
+    "()",
+    "((1 2) (3 4) (5 6))",
+  };
 
-  Object *int_obj = new_integer_obj(42);
-  print_obj(int_obj);
-  putchar('\n');
-  free_obj(int_obj);
+  for (int i = 0; i < sizeof(srcs) / sizeof(*srcs); i++) {
+    Token *tok = tokenize(srcs[i]);
 
-  Object *str_obj = new_string_obj(strdup("Hello, world!"));
-  print_obj(str_obj);
-  putchar('\n');
-  free_obj(str_obj);
+    for (Token *cur = tok; cur != NULL; cur = cur->next)
+      print_token(cur);
 
-  Object *list_obj = new_cell_obj(new_integer_obj(1), new_cell_obj(new_integer_obj(2), new_cell_obj(new_integer_obj(3), NIL)));
-  print_obj(list_obj);
-  putchar('\n');
-  free_obj(list_obj);
+    Token *tok_tmp = tok;
+    Object *obj = parse_obj(&tok);
+    if (obj != NULL) {
+      print_obj(obj);
+      putchar('\n');
+      free_obj(obj);
+    }
+    tok = tok_tmp;
 
-  print_obj(NIL);
-  putchar('\n');
+    free_token(tok);
+  }
 
   return 0;
 }
