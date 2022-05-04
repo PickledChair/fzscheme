@@ -71,3 +71,9 @@ void free_token(Token *tok);
 
 Object *parse_obj(Token **tok);
 Object *parse_objs(Token **tok);
+
+//
+// repl.c
+//
+
+int repl(void);
