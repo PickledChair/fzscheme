@@ -1,4 +1,17 @@
+#include <stdbool.h>
+#include <stddef.h>
 #include <stdint.h>
+
+extern bool debug_flag;
+
+//
+// gc.c
+//
+
+void fzscm_memspace_init(size_t semispace_size);
+void fzscm_memspace_fin(void);
+void fzscm_gc(void);
+void *fzscm_alloc(size_t size);
 
 //
 // object.c
@@ -8,6 +21,7 @@ typedef enum ObjectTag {
   OBJ_CELL,
   OBJ_INTEGER,
   OBJ_STRING,
+  OBJ_MOVED,
 } ObjectTag;
 
 typedef struct Object Object;
@@ -26,6 +40,10 @@ struct Object {
     struct {
       char *value;
     } string;
+
+    struct {
+      Object *address;
+    } moved;
   } fields_of;
 };
 
@@ -35,8 +53,9 @@ struct Object {
 Object *new_cell_obj(Object *car, Object *cdr);
 Object *new_integer_obj(long value);
 Object *new_string_obj(char *value);
-void free_obj(Object *obj);
+// void free_obj(Object *obj);
 void print_obj(Object *obj);
+Object *process_moved_obj(Object *obj);
 
 extern Object *NIL;
 
@@ -77,3 +96,11 @@ Object *parse_objs(Token **tok);
 //
 
 int repl(void);
+typedef struct RootNode RootNode;
+struct RootNode {
+  Object *obj;
+  RootNode *next;
+};
+
+RootNode *get_roots(void);
+void add_root(Object *obj);

@@ -3,6 +3,34 @@
 #include <stdlib.h>
 #include <string.h>
 
+static RootNode *roots = &(RootNode){};
+static RootNode *top_root = NULL;
+
+void add_root(Object *obj) {
+  RootNode *node = calloc(1, sizeof(RootNode));
+  node->obj = obj;
+  if (top_root == NULL) {
+    roots->next = top_root = node;
+  } else {
+    top_root = top_root->next = node;
+  }
+}
+
+RootNode *get_roots(void) {
+  return roots->next;
+}
+
+static void remove_roots(void) {
+  RootNode *cur = roots->next;
+  while (cur != NULL) {
+    RootNode *next = cur->next;
+    free(cur);
+    cur = next;
+  }
+  top_root = NULL;
+  roots->next = NULL;
+}
+
 static int get_paren_level(int init_level, Token *start_tok, Token **end_tok_dest) {
   if (init_level < 0) return init_level;
 
@@ -36,6 +64,8 @@ int repl(void) {
   int paren_level = 0;
 
   for (;;) {
+    remove_roots();
+
     if (paren_level == 0) {
       printf(">>> ");
     } else {
@@ -94,10 +124,12 @@ int repl(void) {
       Token *tok_tmp = top_tok;
       Object *obj = parse_obj(&top_tok);
       if (obj != NULL) {
+        // add_root(obj);
+        // obj = process_moved_obj(obj);
         printf("==> ");
         print_obj(obj);
         putchar('\n');
-        free_obj(obj);
+        // free_obj(obj);
       }
       top_tok = tok_tmp;
     }
