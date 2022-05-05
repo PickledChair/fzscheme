@@ -5,6 +5,22 @@
 extern bool debug_flag;
 
 //
+// string_list.c
+//
+
+typedef struct StringNode StringNode;
+struct StringNode {
+  char *value;
+  StringNode *prev;
+  StringNode *next;
+};
+
+StringNode *new_string_node(char *value);
+void mark_string_node(StringNode *node);
+void string_list_gc(void);
+void clear_string_list(void);
+
+//
 // object.c
 //
 
@@ -29,7 +45,7 @@ struct Object {
     } integer;
 
     struct {
-      char *value;
+      StringNode *str_node;
     } string;
 
     struct {
@@ -46,7 +62,7 @@ Object *new_integer_obj(long value);
 Object *new_string_obj(char *value);
 // void free_obj(Object *obj);
 void print_obj(Object *obj);
-Object *process_moved_obj(Object *obj);
+// Object *process_moved_obj(Object *obj);
 
 extern Object *NIL;
 

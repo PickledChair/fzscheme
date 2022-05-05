@@ -13,6 +13,12 @@ static Object *new_obj(ObjectTag tag) {
 
 Object *new_cell_obj(Object *car, Object *cdr) {
   Object *obj = new_obj(OBJ_CELL);
+  if (car->tag == OBJ_MOVED) {
+    car = car->fields_of.moved.address;
+  }
+  if (cdr->tag == OBJ_MOVED) {
+    car = car->fields_of.moved.address;
+  }
   CAR(obj) = car;
   CDR(obj) = cdr;
   return obj;
@@ -40,7 +46,7 @@ Object *new_integer_obj(long value) {
 
 Object *new_string_obj(char *value) {
   Object *obj = new_obj(OBJ_STRING);
-  obj->fields_of.string.value = value;
+  obj->fields_of.string.str_node = new_string_node(value);
   return obj;
 }
 
@@ -78,7 +84,7 @@ void print_obj(Object *obj) {
     printf("%ld", obj->fields_of.integer.value);
     break;
   case OBJ_STRING:
-    printf("%s", obj->fields_of.string.value);
+    printf("%s", obj->fields_of.string.str_node->value);
     break;
   case OBJ_MOVED:
     printf("<moved>");
@@ -87,14 +93,14 @@ void print_obj(Object *obj) {
   }
 }
 
-Object *process_moved_obj(Object *obj) {
-  if (obj == NULL) return NULL;
-  if (obj->tag == OBJ_CELL) {
-    CAR(obj) = process_moved_obj(CAR(obj));
-    CDR(obj) = process_moved_obj(CDR(obj));
-  } else if (obj->tag == OBJ_MOVED) {
-    obj = obj->fields_of.moved.address;
-    obj = process_moved_obj(obj);
-  }
-  return obj;
-}
+// Object *process_moved_obj(Object *obj) {
+//   if (obj == NULL) return NULL;
+//   if (obj->tag == OBJ_CELL) {
+//     CAR(obj) = process_moved_obj(CAR(obj));
+//     CDR(obj) = process_moved_obj(CDR(obj));
+//   } else if (obj->tag == OBJ_MOVED) {
+//     obj = obj->fields_of.moved.address;
+//     obj = process_moved_obj(obj);
+//   }
+//   return obj;
+// }

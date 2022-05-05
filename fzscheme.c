@@ -26,6 +26,7 @@ int main(int argc, char *argv[]) {
   fzscm_memspace_init(semispace_size);
   repl();
   fzscm_memspace_fin();
+  clear_string_list();
 
   return 0;
 }

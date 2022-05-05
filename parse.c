@@ -8,7 +8,8 @@ Object *parse_objs(Token **tok) {
   } else {
     Object *new_head = new_cell_obj(head, NIL);
     if (head->tag == OBJ_MOVED) {
-      CAR(new_head) = process_moved_obj(head);
+      // CAR(new_head) = process_moved_obj(head);
+      CAR(new_head) = head->fields_of.moved.address;
     }
     head = new_head;
   }
@@ -21,10 +22,15 @@ Object *parse_objs(Token **tok) {
     } else {
       Object *cdr_obj = new_cell_obj(obj, NIL);
       if (head->tag == OBJ_MOVED) {
-        head = process_moved_obj(head);
-        if (cur->tag == OBJ_MOVED)
+        // head = process_moved_obj(head);
+        head = head->fields_of.moved.address;
+        if (cur->tag == OBJ_MOVED) {
           cur = cur->fields_of.moved.address;
-        cdr_obj = process_moved_obj(cdr_obj);
+        }
+        if (cdr_obj->tag == OBJ_MOVED) {
+          // cdr_obj = process_moved_obj(cdr_obj);
+          cdr_obj = cdr_obj->fields_of.moved.address;
+        }
       }
       cur = CDR(cur) = cdr_obj;
     }

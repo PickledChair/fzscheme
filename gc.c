@@ -107,7 +107,7 @@ void fzscm_gc(void) {
     }
   }
 
-  if (root != NULL) {
+  if (root != NULL || fresh_obj_count > 0) {
     // root 以外の forward 処理
     for (void *scan_ptr = to_space;
          scan_ptr < free_ptr;
@@ -147,6 +147,9 @@ void fzscm_gc(void) {
           }
         }
         break;
+      case OBJ_STRING:
+        mark_string_node(cur_obj->fields_of.string.str_node);
+        break;
       default:
         break;
       }
@@ -155,6 +158,8 @@ void fzscm_gc(void) {
       printf("finish scanning\n");
     }
   }
+
+  string_list_gc();
 
   fresh_obj_root_start = free_ptr;
 }
