@@ -5,15 +5,6 @@
 extern bool debug_flag;
 
 //
-// gc.c
-//
-
-void fzscm_memspace_init(size_t semispace_size);
-void fzscm_memspace_fin(void);
-void fzscm_gc(void);
-void *fzscm_alloc(size_t size);
-
-//
 // object.c
 //
 
@@ -60,6 +51,27 @@ Object *process_moved_obj(Object *obj);
 extern Object *NIL;
 
 //
+// gc.c
+//
+
+void fzscm_memspace_init(size_t semispace_size);
+void fzscm_memspace_fin(void);
+void inc_fresh_obj_count(void);
+void reset_fresh_obj_count(void);
+void fzscm_gc(void);
+void *fzscm_alloc(size_t size);
+
+typedef struct RootNode RootNode;
+struct RootNode {
+  Object *obj;
+  RootNode *next;
+};
+
+RootNode *get_roots(void);
+void add_root(Object *obj);
+void remove_roots(void);
+
+//
 // tokenize.c
 //
 
@@ -96,11 +108,3 @@ Object *parse_objs(Token **tok);
 //
 
 int repl(void);
-typedef struct RootNode RootNode;
-struct RootNode {
-  Object *obj;
-  RootNode *next;
-};
-
-RootNode *get_roots(void);
-void add_root(Object *obj);

@@ -6,9 +6,9 @@ Object *NIL = &(Object){OBJ_CELL};
 
 static Object *new_obj(ObjectTag tag) {
   // Object *obj = (Object *)calloc(1, sizeof(Object));
+  inc_fresh_obj_count();
   Object *obj = (Object *)fzscm_alloc(sizeof(Object));
   obj->tag = tag;
-  add_root(obj);
   return obj;
 }
 
@@ -45,10 +45,10 @@ Object *new_string_obj(char *value) {
   return obj;
 }
 
-static void free_string_obj(Object *obj) {
-  free(obj->fields_of.string.value);
-  free(obj);
-}
+// static void free_string_obj(Object *obj) {
+//   free(obj->fields_of.string.value);
+//   free(obj);
+// }
 
 // void free_obj(Object *obj) {
 //   switch (obj->tag) {

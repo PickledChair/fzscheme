@@ -22,7 +22,8 @@ Object *parse_objs(Token **tok) {
       Object *cdr_obj = new_cell_obj(obj, NIL);
       if (head->tag == OBJ_MOVED) {
         head = process_moved_obj(head);
-        cur = cur->fields_of.moved.address;
+        if (cur->tag == OBJ_MOVED)
+          cur = cur->fields_of.moved.address;
         cdr_obj = process_moved_obj(cdr_obj);
       }
       cur = CDR(cur) = cdr_obj;
