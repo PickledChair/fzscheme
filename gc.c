@@ -40,6 +40,10 @@ void reset_fresh_obj_count(void) {
   fresh_obj_root_start = free_ptr;
 }
 
+#define FORWARD(from_ref) memcpy(free_ptr, from_ref, sizeof(Object));\
+                          from_ref->tag = OBJ_MOVED;\
+                          from_ref->fields_of.moved.address = free_ptr;
+
 void fzscm_gc(void) {
   memset(from_space, 0, extent);
 
@@ -66,9 +70,9 @@ void fzscm_gc(void) {
         printf("memory error: shortage of memory\n");
         exit(1);
       }
-      memcpy(free_ptr, cur_root->obj, obj_size);
-      cur_root->obj->tag = OBJ_MOVED;
-      cur_root->obj->fields_of.moved.address = free_ptr;
+
+      FORWARD(cur_root->obj);
+
       cur_root->obj = free_ptr;
       cur_root = cur_root->next;
       free_ptr += obj_size;
@@ -93,9 +97,9 @@ void fzscm_gc(void) {
         print_obj(cur_obj);
         printf("\n");
       }
-      memcpy(free_ptr, cur_obj, sizeof(Object));
-      cur_obj->tag = OBJ_MOVED;
-      cur_obj->fields_of.moved.address = free_ptr;
+
+      FORWARD(cur_obj);
+
       if (fresh_obj_root_start == cur_root) {
         fresh_obj_root_start = free_ptr;
       }
@@ -123,18 +127,20 @@ void fzscm_gc(void) {
       switch (cur_obj->tag) {
       case OBJ_CELL:
         if (CAR(cur_obj)->tag != OBJ_MOVED) {
-          memcpy(free_ptr, CAR(cur_obj), sizeof(Object));
-          CAR(cur_obj)->tag = OBJ_MOVED;
-          CAR(cur_obj) = CAR(cur_obj)->fields_of.moved.address = free_ptr;
+
+          FORWARD(CAR(cur_obj));
+
+          CAR(cur_obj) = free_ptr;
           free_ptr += sizeof(Object);
         } else {
           CAR(cur_obj) = CAR(cur_obj)->fields_of.moved.address;
         }
         if (CDR(cur_obj) != NIL) {
           if (CDR(cur_obj)->tag != OBJ_MOVED) {
-            memcpy(free_ptr, CDR(cur_obj), sizeof(Object));
-            CDR(cur_obj)->tag = OBJ_MOVED;
-            CDR(cur_obj) = CDR(cur_obj)->fields_of.moved.address = free_ptr;
+
+            FORWARD(CDR(cur_obj));
+
+            CDR(cur_obj) = free_ptr;
             free_ptr += sizeof(Object);
           } else {
             CDR(cur_obj) = CDR(cur_obj)->fields_of.moved.address;
