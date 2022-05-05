@@ -68,7 +68,7 @@ struct RootNode {
 
 RootNode *get_roots(void);
 void add_root(Object *obj);
-void remove_roots(void);
+void clear_roots(void);
 
 //
 // tokenize.c

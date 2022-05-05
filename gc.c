@@ -208,7 +208,7 @@ void add_root(Object *obj) {
 
 RootNode *get_roots(void) { return roots->next; }
 
-void remove_roots(void) {
+void clear_roots(void) {
   RootNode *cur = roots->next;
   while (cur != NULL) {
     RootNode *next = cur->next;

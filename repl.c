@@ -36,7 +36,7 @@ int repl(void) {
   int paren_level = 0;
 
   for (;;) {
-    remove_roots();
+    clear_roots();
 
     if (paren_level == 0) {
       printf(">>> ");
