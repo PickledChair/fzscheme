@@ -28,7 +28,7 @@ void fzscm_memspace_fin(void) {
   free(from_space);
 }
 
-void inc_fresh_obj_count(void) {
+static void inc_fresh_obj_count(void) {
   if (fresh_obj_count == 0) {
     fresh_obj_root_start = free_ptr;
   }
@@ -169,6 +169,7 @@ void *fzscm_alloc(size_t size) {
   if (debug_flag) {
     print_memory_status();
   }
+  inc_fresh_obj_count();
   if (free_ptr + size > TOP_PTR) {
     fzscm_gc();
     if (free_ptr + size > TOP_PTR) {

@@ -56,7 +56,6 @@ extern Object *NIL;
 
 void fzscm_memspace_init(size_t semispace_size);
 void fzscm_memspace_fin(void);
-void inc_fresh_obj_count(void);
 void reset_fresh_obj_count(void);
 void fzscm_gc(void);
 void *fzscm_alloc(size_t size);

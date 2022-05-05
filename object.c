@@ -6,7 +6,6 @@ Object *NIL = &(Object){OBJ_CELL};
 
 static Object *new_obj(ObjectTag tag) {
   // Object *obj = (Object *)calloc(1, sizeof(Object));
-  inc_fresh_obj_count();
   Object *obj = (Object *)fzscm_alloc(sizeof(Object));
   obj->tag = tag;
   return obj;
