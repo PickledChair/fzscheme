@@ -95,9 +95,9 @@ int repl(void) {
     {
       Token *tok_tmp = top_tok;
       Object *obj = parse_obj(&top_tok);
-      add_root(obj);
-      reset_fresh_obj_count();
       if (obj != NULL) {
+        add_root(obj);
+        reset_fresh_obj_count();
         printf("==> ");
         print_obj(obj);
         putchar('\n');
