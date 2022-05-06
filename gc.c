@@ -57,9 +57,8 @@ void fzscm_gc(void) {
   free_ptr = to_space;
 
   // root の forward 処理
-  RootNode *root = get_roots();
   {
-    RootNode *cur_root = root;
+    RootNode *cur_root = get_roots();
     while (cur_root != NULL) {
       size_t obj_size = sizeof(*cur_root->obj);
       if (debug_flag) {
