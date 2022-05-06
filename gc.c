@@ -107,56 +107,54 @@ void fzscm_gc(void) {
     }
   }
 
-  if (root != NULL || fresh_obj_count > 0) {
-    // root 以外の forward 処理
-    for (void *scan_ptr = to_space;
-         scan_ptr < free_ptr;
-         scan_ptr += sizeof(Object)) {
-      if (debug_flag) {
-        printf("scan_ptr: %p, free_ptr: %p\n", scan_ptr, free_ptr);
-      }
-      if (free_ptr + sizeof(Object) > TOP_PTR) {
-        printf("memory error: shortage of memory\n");
-        exit(1);
-      }
-      Object *cur_obj = (Object *)scan_ptr;
-      if (debug_flag) {
-        print_obj(cur_obj);
-        printf(": being scanned\n");
-      }
-      switch (cur_obj->tag) {
-      case OBJ_CELL:
-        if (CAR(cur_obj)->tag != OBJ_MOVED) {
+  // root 以外の forward 処理
+  for (void *scan_ptr = to_space;
+        scan_ptr < free_ptr;
+        scan_ptr += sizeof(Object)) {
+    if (debug_flag) {
+      printf("scan_ptr: %p, free_ptr: %p\n", scan_ptr, free_ptr);
+    }
+    if (free_ptr + sizeof(Object) > TOP_PTR) {
+      printf("memory error: shortage of memory\n");
+      exit(1);
+    }
+    Object *cur_obj = (Object *)scan_ptr;
+    if (debug_flag) {
+      print_obj(cur_obj);
+      printf(": being scanned\n");
+    }
+    switch (cur_obj->tag) {
+    case OBJ_CELL:
+      if (CAR(cur_obj)->tag != OBJ_MOVED) {
 
-          FORWARD(CAR(cur_obj));
+        FORWARD(CAR(cur_obj));
 
-          CAR(cur_obj) = free_ptr;
+        CAR(cur_obj) = free_ptr;
+        free_ptr += sizeof(Object);
+      } else {
+        CAR(cur_obj) = CAR(cur_obj)->fields_of.moved.address;
+      }
+      if (CDR(cur_obj) != NIL) {
+        if (CDR(cur_obj)->tag != OBJ_MOVED) {
+
+          FORWARD(CDR(cur_obj));
+
+          CDR(cur_obj) = free_ptr;
           free_ptr += sizeof(Object);
         } else {
-          CAR(cur_obj) = CAR(cur_obj)->fields_of.moved.address;
+          CDR(cur_obj) = CDR(cur_obj)->fields_of.moved.address;
         }
-        if (CDR(cur_obj) != NIL) {
-          if (CDR(cur_obj)->tag != OBJ_MOVED) {
-
-            FORWARD(CDR(cur_obj));
-
-            CDR(cur_obj) = free_ptr;
-            free_ptr += sizeof(Object);
-          } else {
-            CDR(cur_obj) = CDR(cur_obj)->fields_of.moved.address;
-          }
-        }
-        break;
-      case OBJ_STRING:
-        mark_string_node(cur_obj->fields_of.string.str_node);
-        break;
-      default:
-        break;
       }
+      break;
+    case OBJ_STRING:
+      mark_string_node(cur_obj->fields_of.string.str_node);
+      break;
+    default:
+      break;
     }
-    if (debug_flag) {
-      printf("finish scanning\n");
-    }
+  }
+  if (debug_flag) {
+    printf("finish scanning\n");
   }
 
   string_list_gc();
