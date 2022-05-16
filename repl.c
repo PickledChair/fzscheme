@@ -7,7 +7,6 @@ static int get_paren_level(int init_level, Token *start_tok, Token **end_tok_des
   if (init_level < 0) return init_level;
 
   int level = init_level;
-  Token *prev_tok = NULL;
   for (Token *cur = start_tok; cur != NULL; cur = cur->next) {
     switch (cur->tag) {
     case TK_LPAREN:
