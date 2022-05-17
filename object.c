@@ -13,12 +13,8 @@ static Object *new_obj(ObjectTag tag) {
 
 Object *new_cell_obj(Object *car, Object *cdr) {
   Object *obj = new_obj(OBJ_CELL);
-  if (car->tag == OBJ_MOVED) {
-    car = car->fields_of.moved.address;
-  }
-  if (cdr->tag == OBJ_MOVED) {
-    car = car->fields_of.moved.address;
-  }
+  CHECK_OBJ_MOVING(car);
+  CHECK_OBJ_MOVING(cdr);
   CAR(obj) = car;
   CDR(obj) = cdr;
   return obj;
