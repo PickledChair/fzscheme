@@ -15,7 +15,7 @@ static void *fresh_obj_root_start, *fresh_obj_root_end;
 static size_t fresh_obj_count = 0;
 
 void fzscm_memspace_init(size_t semispace_size) {
-  if (semispace_size > 0) {
+  if (semispace_size >= sizeof(Object)) {
     extent = (semispace_size / sizeof(Object)) * sizeof(Object);
   }
   to_space = calloc(1, extent);
