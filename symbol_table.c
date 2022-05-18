@@ -58,6 +58,7 @@ Object *intern_name(char *name) {
       for (;;) {
         if (cur_ent->next == NULL) {
           cur_ent->next = ent;
+          break;
         }
       }
     }
