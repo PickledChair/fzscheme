@@ -102,9 +102,9 @@ static void forward_fresh_obj_roots(void) {
 }
 
 static void forward_non_roots(void) {
-    for (void *scan_ptr = to_space;
-        scan_ptr < free_ptr;
-        scan_ptr += sizeof(Object)) {
+  for (void *scan_ptr = to_space;
+      scan_ptr < free_ptr;
+      scan_ptr += sizeof(Object)) {
     if (debug_flag) {
       printf("scan_ptr: %p, free_ptr: %p\n", scan_ptr, free_ptr);
     }
