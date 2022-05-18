@@ -68,8 +68,9 @@ struct Object {
 #define CAR(obj) (obj)->fields_of.cell.car
 #define CDR(obj) (obj)->fields_of.cell.cdr
 
-#define CHECK_OBJ_MOVING(obj) if ((obj)->tag == OBJ_MOVED) {\
-    (obj) = (obj)->fields_of.moved.address; \
+#define CHECK_OBJ_MOVING(obj)\
+  if ((obj)->tag == OBJ_MOVED) {\
+    (obj) = (obj)->fields_of.moved.address;\
   }
 
 Object *new_cell_obj(Object *car, Object *cdr);
