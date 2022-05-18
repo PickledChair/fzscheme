@@ -40,74 +40,69 @@ void reset_fresh_obj_count(void) {
   fresh_obj_root_start = free_ptr;
 }
 
-#define FORWARD(from_ref) memcpy(free_ptr, from_ref, sizeof(Object));\
-                          from_ref->tag = OBJ_MOVED;\
-                          from_ref->fields_of.moved.address = free_ptr;
+#define FORWARD(from_ref)\
+  memcpy(free_ptr, from_ref, sizeof(Object));\
+  from_ref->tag = OBJ_MOVED;\
+  from_ref->fields_of.moved.address = free_ptr;
 
-void fzscm_gc(void) {
-  memset(from_space, 0, extent);
+static void flip(void) {
+  void *to_space_tmp = to_space;
+  to_space = from_space;
+  from_space = to_space_tmp;
+}
 
-  // flip 処理
-  {
-    void *to_space_tmp = to_space;
-    to_space = from_space;
-    from_space = to_space_tmp;
-  }
-  fresh_obj_root_end = free_ptr;
-  free_ptr = to_space;
+static void forward_roots(void) {
+  RootNode *cur_root = get_roots();
 
-  // root の forward 処理
-  {
-    RootNode *cur_root = get_roots();
-    while (cur_root != NULL) {
-      size_t obj_size = sizeof(*cur_root->obj);
-      if (debug_flag) {
-        print_obj(cur_root->obj);
-        printf(" object size: 0x%zx\n", obj_size);
-      }
-      if (free_ptr + obj_size > TOP_PTR) {
-        printf("memory error: shortage of memory\n");
-        exit(1);
-      }
-
-      FORWARD(cur_root->obj);
-
-      cur_root->obj = free_ptr;
-      cur_root = cur_root->next;
-      free_ptr += obj_size;
-    }
-  }
-
-  {
-    void *cur_root = fresh_obj_root_start;
+  while (cur_root != NULL) {
+    size_t obj_size = sizeof(*cur_root->obj);
     if (debug_flag) {
-      // 最後にメモリ確保しようとしたオブジェクトを除く数
-      printf("fresh obj count: %zu\n", fresh_obj_count - 1);
+      print_obj(cur_root->obj);
+      printf(" object size: 0x%zx\n", obj_size);
     }
-    for (size_t root_cnt = 1; root_cnt < fresh_obj_count;
-         root_cnt++, cur_root += sizeof(Object)) {
-      if (free_ptr + sizeof(Object) > TOP_PTR) {
-        printf("memory error: shortage of memory\n");
-        exit(1);
-      }
-      Object *cur_obj = (Object *)cur_root;
-      if (debug_flag) {
-        printf("fresh obj (%p): ", cur_obj);
-        print_obj(cur_obj);
-        printf("\n");
-      }
-
-      FORWARD(cur_obj);
-
-      if (fresh_obj_root_start == cur_root) {
-        fresh_obj_root_start = free_ptr;
-      }
-      free_ptr += sizeof(Object);
+    if (free_ptr + obj_size > TOP_PTR) {
+      printf("memory error: shortage of memory\n");
+      exit(1);
     }
+
+    FORWARD(cur_root->obj);
+
+    cur_root->obj = free_ptr;
+    cur_root = cur_root->next;
+    free_ptr += obj_size;
   }
+}
 
-  // root 以外の forward 処理
-  for (void *scan_ptr = to_space;
+static void forward_fresh_obj_roots(void) {
+  void *cur_root = fresh_obj_root_start;
+  if (debug_flag) {
+    // 最後にメモリ確保しようとしたオブジェクトを除く数
+    printf("fresh obj count: %zu\n", fresh_obj_count - 1);
+  }
+  for (size_t root_cnt = 1; root_cnt < fresh_obj_count;
+       root_cnt++, cur_root += sizeof(Object)) {
+    if (free_ptr + sizeof(Object) > TOP_PTR) {
+      printf("memory error: shortage of memory\n");
+      exit(1);
+    }
+    Object *cur_obj = (Object *)cur_root;
+    if (debug_flag) {
+      printf("fresh obj (%p): ", cur_obj);
+      print_obj(cur_obj);
+      printf("\n");
+    }
+
+    FORWARD(cur_obj);
+
+    if (fresh_obj_root_start == cur_root) {
+      fresh_obj_root_start = free_ptr;
+    }
+    free_ptr += sizeof(Object);
+  }
+}
+
+static void forward_non_roots(void) {
+    for (void *scan_ptr = to_space;
         scan_ptr < free_ptr;
         scan_ptr += sizeof(Object)) {
     if (debug_flag) {
@@ -155,7 +150,28 @@ void fzscm_gc(void) {
   if (debug_flag) {
     printf("finish scanning\n");
   }
+}
 
+void fzscm_gc(void) {
+  memset(from_space, 0, extent);
+
+  // flip 処理
+  flip();
+
+  // GC 前までに新しく確保したメモリ領域を記憶
+  fresh_obj_root_end = free_ptr;
+
+  // free_ptr の更新を新しい to_space から始めるようにセット
+  free_ptr = to_space;
+
+  // root の forward 処理
+  forward_roots();
+  forward_fresh_obj_roots();
+
+  // root 以外の forward 処理
+  forward_non_roots();
+
+  // 文字列は Scheme オブジェクトとは別に GC を行う
   string_list_gc();
 
   fresh_obj_root_start = free_ptr;
