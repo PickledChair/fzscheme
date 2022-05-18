@@ -32,6 +32,7 @@ static Object *get_symbol_obj(char *name) {
         return ent->value;
       }
     }
+    ent = ent->next;
   }
 
   return NULL;
