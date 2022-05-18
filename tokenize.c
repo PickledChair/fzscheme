@@ -13,27 +13,10 @@ static Token *new_token(TokenTag tag, char *start, char *end) {
 }
 
 static bool is_extended_identifier_char(char ch) {
-  switch (ch) {
-  case '!':
-  case '$':
-  case '%':
-  case '&':
-  case '*':
-  case '+':
-  case '-':
-  case '.':
-  case '/':
-  case ':':
-  case '<':
-  case '=':
-  case '>':
-  case '?':
-  case '@':
-  case '^':
-  case '_':
-  case '~':
+  // NOTE: strchr 関数の検索対象文字列は末尾に必ずヌル文字を含んでいるので除外する必要がある
+  if (ch != '\0' && strchr("!$%&*+-./:<=>?@^_~", ch) != NULL) {
     return true;
-  default:
+  } else {
     return false;
   }
 }
