@@ -12,6 +12,32 @@ static Token *new_token(TokenTag tag, char *start, char *end) {
   return tok;
 }
 
+static bool is_extended_identifier_char(char ch) {
+  switch (ch) {
+  case '!':
+  case '$':
+  case '%':
+  case '&':
+  case '*':
+  case '+':
+  case '-':
+  case '.':
+  case '/':
+  case ':':
+  case '<':
+  case '=':
+  case '>':
+  case '?':
+  case '@':
+  case '^':
+  case '_':
+  case '~':
+    return true;
+  default:
+    return false;
+  }
+}
+
 Token *tokenize(char *input) {
   Token head = {};
   Token *cur = &head;
@@ -35,7 +61,13 @@ Token *tokenize(char *input) {
     // 文字列リテラル
     if (*input == '"') {
       char *start = input;
-      while (*(++input) != '"');
+      while (*(++input) != '"') {
+        if (*input == '\n' || *input == '\0') {
+          printf("tokenize error: string literal is not closed by \"\n");
+          free_token(head.next);
+          return NULL;
+        }
+      }
       cur = cur->next = new_token(TK_STR, start, input);
       int str_len = input - (start+1);
       char *str_buf = calloc(1, str_len+1);
@@ -59,6 +91,26 @@ Token *tokenize(char *input) {
       input++;
       continue;
     }
+
+    // 識別子
+    if (isalpha(*input) || is_extended_identifier_char(*input)) {
+      char *start = input;
+      while (isalnum(*input) || is_extended_identifier_char(*input)) {
+        input++;
+      }
+      char *end = input - 1;
+      cur = cur->next = new_token(TK_IDENT, start, end);
+      int name_len = end - start + 1;
+      char *name_buf = calloc(1, name_len + 1);
+      strncpy(name_buf, start, name_len);
+      name_buf[name_len] = '\0';
+      cur->str = name_buf;
+      continue;
+    }
+
+    printf("tokenize error: invalid character %c\n", *input);
+    free_token(head.next);
+    return NULL;
   }
 
   return head.next;
@@ -66,6 +118,9 @@ Token *tokenize(char *input) {
 
 void print_token(Token *tok) {
   switch (tok->tag) {
+  case TK_IDENT:
+    printf("IDENT\t%s\n", tok->str);
+    break;
   case TK_INT:
     printf("INT\t%ld\n", (long)(tok->val));
     break;
@@ -84,7 +139,7 @@ void print_token(Token *tok) {
 void free_token(Token *tok) {
   Token *next;
   for (Token *cur = tok; cur != NULL; cur = next) {
-    if (cur->tag == TK_STR)
+    if (cur->tag == TK_STR || cur->tag == TK_IDENT)
       free(cur->str);
     next = cur->next;
     free(cur);

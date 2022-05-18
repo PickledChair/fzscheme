@@ -21,6 +21,12 @@ void string_list_gc(void);
 void clear_string_list(void);
 
 //
+// hash.c
+//
+
+uint32_t str_hash(char *str);
+
+//
 // object.c
 //
 
@@ -28,6 +34,7 @@ typedef enum ObjectTag {
   OBJ_CELL,
   OBJ_INTEGER,
   OBJ_STRING,
+  OBJ_SYMBOL,
   OBJ_MOVED,
 } ObjectTag;
 
@@ -49,6 +56,10 @@ struct Object {
     } string;
 
     struct {
+      char *name;
+    } symbol;
+
+    struct {
       Object *address;
     } moved;
   } fields_of;
@@ -64,11 +75,20 @@ struct Object {
 Object *new_cell_obj(Object *car, Object *cdr);
 Object *new_integer_obj(long value);
 Object *new_string_obj(char *value);
+Object *new_symbol_obj(char *name);
+void free_symbol_obj(Object *obj);
 // void free_obj(Object *obj);
 void print_obj(Object *obj);
 // Object *process_moved_obj(Object *obj);
 
 extern Object *NIL;
+
+//
+// symbol_table.c
+//
+
+Object *intern_name(char *name);
+void clear_symbol_table(void);
 
 //
 // gc.c
@@ -95,6 +115,7 @@ void clear_roots(void);
 //
 
 typedef enum {
+  TK_IDENT,
   TK_INT,
   TK_LPAREN,
   TK_RPAREN,

@@ -62,6 +62,9 @@ int repl(void) {
     }
 
     Token *tok = tokenize(buffer);
+    if (tok == NULL) {
+      continue;
+    }
     if (top_tok == NULL) {
       top_tok = tok;
     }

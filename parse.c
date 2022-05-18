@@ -27,6 +27,11 @@ Object *parse_obj(Token **tok) {
   if (*tok == NULL) return NULL;
 
   switch ((*tok)->tag) {
+  case TK_IDENT: {
+    Object *obj = intern_name(strdup((*tok)->str));
+    *tok = (*tok)->next;
+    return obj;
+  }
   case TK_INT: {
     Object *obj = new_integer_obj((*tok)->val);
     *tok = (*tok)->next;

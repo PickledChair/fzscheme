@@ -46,6 +46,18 @@ Object *new_string_obj(char *value) {
   return obj;
 }
 
+Object *new_symbol_obj(char *name) {
+  Object *obj = calloc(1, sizeof(Object));
+  obj->tag = OBJ_SYMBOL;
+  obj->fields_of.symbol.name = name;
+  return obj;
+}
+
+void free_symbol_obj(Object *obj) {
+  free(obj->fields_of.symbol.name);
+  free(obj);
+}
+
 // static void free_string_obj(Object *obj) {
 //   free(obj->fields_of.string.value);
 //   free(obj);
@@ -81,6 +93,9 @@ void print_obj(Object *obj) {
     break;
   case OBJ_STRING:
     printf("%s", obj->fields_of.string.str_node->value);
+    break;
+  case OBJ_SYMBOL:
+    printf("%s", obj->fields_of.symbol.name);
     break;
   case OBJ_MOVED:
     printf("<moved>");

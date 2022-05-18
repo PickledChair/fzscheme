@@ -23,10 +23,14 @@ void parse_args(int argc, char *argv[]) {
 
 int main(int argc, char *argv[]) {
   parse_args(argc, argv);
+
   fzscm_memspace_init(semispace_size);
+
   repl();
+
   fzscm_memspace_fin();
   clear_string_list();
+  clear_symbol_table();
 
   return 0;
 }
