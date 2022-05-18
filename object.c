@@ -11,6 +11,12 @@ static Object *new_obj(ObjectTag tag) {
   return obj;
 }
 
+Object *new_bool_obj(bool value) {
+  Object *obj = new_obj(OBJ_BOOLEAN);
+  obj->fields_of.boolean.value = value;
+  return obj;
+}
+
 Object *new_cell_obj(Object *car, Object *cdr) {
   Object *obj = new_obj(OBJ_CELL);
   CHECK_OBJ_MOVING(car);
@@ -79,6 +85,16 @@ void free_symbol_obj(Object *obj) {
 
 void print_obj(Object *obj) {
   switch (obj->tag) {
+  case OBJ_BOOLEAN: {
+    char *bool_literal;
+    if (obj->fields_of.boolean.value) {
+      bool_literal = "#t";
+    } else {
+      bool_literal = "#f";
+    }
+    printf("%s", bool_literal);
+    break;
+  }
   case OBJ_CELL:
     if (CAR(obj)->tag == OBJ_SYMBOL && CAR(obj) == intern_name("quote")) {
       if (CDR(obj)->tag == OBJ_CELL) {

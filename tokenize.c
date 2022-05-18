@@ -82,6 +82,23 @@ Token *tokenize(char *input) {
       continue;
     }
 
+    if (*input == '#') {
+      char *start = input;
+      input++;
+      if (*input == 't') {
+        cur = cur->next = new_token(TK_TRUE, start, input);
+        input++;
+        continue;
+      } else if (*input == 'f') {
+        cur = cur->next = new_token(TK_FALSE, start, input);
+        input++;
+        continue;
+      }
+      printf("tokenize error: unimplemented #... literal\n");
+      free_token(head.next);
+      return NULL;
+    }
+
     // 識別子
     if (isalpha(*input) || is_extended_identifier_char(*input)) {
       char *start = input;
@@ -108,6 +125,9 @@ Token *tokenize(char *input) {
 
 void print_token(Token *tok) {
   switch (tok->tag) {
+  case TK_FALSE:
+    printf("FALSE\t#f\n");
+    break;
   case TK_IDENT:
     printf("IDENT\t%s\n", tok->str);
     break;
@@ -125,6 +145,9 @@ void print_token(Token *tok) {
     break;
   case TK_STR:
     printf("STRING\t%s\n", tok->str);
+    break;
+  case TK_TRUE:
+    printf("TRUE\t#t\n");
     break;
   }
 }

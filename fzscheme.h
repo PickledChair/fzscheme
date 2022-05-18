@@ -31,6 +31,7 @@ uint32_t str_hash(char *str);
 //
 
 typedef enum ObjectTag {
+  OBJ_BOOLEAN,
   OBJ_CELL,
   OBJ_INTEGER,
   OBJ_STRING,
@@ -42,6 +43,10 @@ typedef struct Object Object;
 struct Object {
   ObjectTag tag;
   union {
+    struct {
+      bool value;
+    } boolean;
+
     struct {
       Object *car;
       Object *cdr;
@@ -73,6 +78,7 @@ struct Object {
     (obj) = (obj)->fields_of.moved.address;\
   }
 
+Object *new_bool_obj(bool value);
 Object *new_cell_obj(Object *car, Object *cdr);
 Object *new_integer_obj(long value);
 Object *new_string_obj(char *value);
@@ -116,12 +122,14 @@ void clear_roots(void);
 //
 
 typedef enum {
+  TK_FALSE,
   TK_IDENT,
   TK_INT,
   TK_LPAREN,
   TK_QUOTE,
   TK_RPAREN,
   TK_STR,
+  TK_TRUE,
 } TokenTag;
 
 typedef struct Token Token;
