@@ -55,8 +55,11 @@ void mark_string_node(StringNode *node) {
 void string_list_gc(void) {
   clear_string_list();
   if (marked_string_list_head->next != NULL) {
-    string_list_head->next = string_list_top = marked_string_list_head->next;
+    string_list_head->next = marked_string_list_head->next;
     marked_string_list_head->next->prev = string_list_head;
+
+    string_list_top = marked_string_list_top;
+
     marked_string_list_head->next = NULL;
     marked_string_list_top = NULL;
   }
