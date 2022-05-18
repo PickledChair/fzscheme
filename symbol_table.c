@@ -61,6 +61,7 @@ Object *intern_name(char *name) {
           cur_ent->next = ent;
           break;
         }
+        cur_ent = cur_ent->next;
       }
     }
 
