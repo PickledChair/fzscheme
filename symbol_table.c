@@ -47,7 +47,7 @@ Object *intern_name(char *name) {
     return symbol;
   } else {
     uint32_t hash = str_hash(name);
-    symbol = new_symbol_obj(name);
+    symbol = new_symbol_obj(strdup(name));
     SymTableEntry *ent = new_sym_table_entry(hash, symbol);
 
     size_t idx = hash % SYMBOL_TABLE_SIZE;

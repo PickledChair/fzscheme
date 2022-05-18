@@ -28,7 +28,7 @@ Object *parse_obj(Token **tok) {
 
   switch ((*tok)->tag) {
   case TK_IDENT: {
-    Object *obj = intern_name(strdup((*tok)->str));
+    Object *obj = intern_name((*tok)->str);
     *tok = (*tok)->next;
     return obj;
   }
@@ -40,6 +40,11 @@ Object *parse_obj(Token **tok) {
   case TK_LPAREN:
     *tok = (*tok)->next;
     return parse_objs(tok);
+  case TK_QUOTE: {
+    Object *obj = intern_name("quote");
+    *tok = (*tok)->next;
+    return new_cell_obj(obj, new_cell_obj(parse_obj(tok), NIL));
+  }
   case TK_RPAREN:
     *tok = (*tok)->next;
     return NULL;

@@ -80,13 +80,20 @@ void free_symbol_obj(Object *obj) {
 void print_obj(Object *obj) {
   switch (obj->tag) {
   case OBJ_CELL:
-    putchar('(');
-    for (Object *cur = obj; cur != NIL; cur = CDR(cur)) {
-      print_obj(CAR(cur));
-      if (CDR(cur) != NIL)
-        putchar(' ');
+    if (CAR(obj)->tag == OBJ_SYMBOL && CAR(obj) == intern_name("quote")) {
+      if (CDR(obj)->tag == OBJ_CELL) {
+        putchar('\'');
+        print_obj(CAR(CDR(obj)));
+      }
+    } else {
+      putchar('(');
+      for (Object *cur = obj; cur != NIL; cur = CDR(cur)) {
+        print_obj(CAR(cur));
+        if (CDR(cur) != NIL)
+          putchar(' ');
+      }
+      putchar(')');
     }
-    putchar(')');
     break;
   case OBJ_INTEGER:
     printf("%ld", obj->fields_of.integer.value);

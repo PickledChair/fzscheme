@@ -20,7 +20,12 @@ static int get_paren_level(int init_level, Token *start_tok, Token **end_tok_des
     }
     *end_tok_dest = cur;
     if (level < 0) return level;
-    if (level == 0 && cur->next != NULL) return -1;
+    if (level == 0) {
+      if ((cur->tag != TK_QUOTE && cur->next != NULL)
+          || (cur->tag == TK_QUOTE && cur->next == NULL)) {
+        return -1;
+      }
+    }
   }
 
   return level;

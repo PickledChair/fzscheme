@@ -118,6 +118,7 @@ typedef enum {
   TK_IDENT,
   TK_INT,
   TK_LPAREN,
+  TK_QUOTE,
   TK_RPAREN,
   TK_STR,
 } TokenTag;

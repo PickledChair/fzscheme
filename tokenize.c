@@ -92,6 +92,13 @@ Token *tokenize(char *input) {
       continue;
     }
 
+    // クォート
+    if (*input == '\'') {
+      cur = cur->next = new_token(TK_QUOTE, input, input+1);
+      input++;
+      continue;
+    }
+
     // 識別子
     if (isalpha(*input) || is_extended_identifier_char(*input)) {
       char *start = input;
@@ -126,6 +133,9 @@ void print_token(Token *tok) {
     break;
   case TK_LPAREN:
     printf("LPAREN\t(\n");
+    break;
+  case TK_QUOTE:
+    printf("QUOTE\t'\n");
     break;
   case TK_RPAREN:
     printf("RPAREN\t)\n");
