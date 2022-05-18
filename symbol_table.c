@@ -49,11 +49,11 @@ Object *intern_name(char *name) {
     symbol = new_symbol_obj(name);
     SymTableEntry *ent = new_sym_table_entry(hash, symbol);
 
-    size_t index = hash % SYMBOL_TABLE_SIZE;
-    if (symbol_table[index] == NULL) {
-      symbol_table[index] = ent;
+    size_t idx = hash % SYMBOL_TABLE_SIZE;
+    if (symbol_table[idx] == NULL) {
+      symbol_table[idx] = ent;
     } else {
-      SymTableEntry *cur_ent = symbol_table[index];
+      SymTableEntry *cur_ent = symbol_table[idx];
 
       for (;;) {
         if (cur_ent->next == NULL) {
