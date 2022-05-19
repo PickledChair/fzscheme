@@ -105,9 +105,26 @@ int repl(void) {
       if (obj != NULL) {
         add_root(obj);
         reset_fresh_obj_count();
-        printf("==> ");
-        print_obj(obj);
-        putchar('\n');
+        if (debug_flag) {
+          printf("AST:\n\n");
+          print_obj(obj);
+          printf("\n\n");
+        }
+
+        Inst *code = compile(obj);
+        if (debug_flag && code != NULL) {
+          printf("VM CODE:\n\n");
+          print_code(code, 0);
+          putchar('\n');
+        }
+        if (code != NULL) {
+          VMPtr vm = new_vm(code);
+          Object *result_obj = vm_run(vm);
+          printf("==> ");
+          print_obj(result_obj);
+          putchar('\n');
+          free_vm(vm);
+        }
         // free_obj(obj);
       }
       top_tok = tok_tmp;

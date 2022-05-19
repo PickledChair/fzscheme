@@ -155,6 +155,41 @@ Object *parse_obj(Token **tok);
 Object *parse_objs(Token **tok);
 
 //
+// compiler.c
+//
+
+typedef enum {
+  INST_LDC,
+  INST_STOP,
+} InstTag;
+
+typedef struct Inst Inst;
+struct Inst {
+  InstTag tag;
+  Inst *next;
+
+  union {
+    struct {
+      Object *constant;
+    } ldc;
+  } args_of;
+};
+
+void free_code(Inst *code);
+void print_code(Inst *code, int level);
+Inst *compile(Object *ast);
+
+//
+// vm.c
+//
+
+typedef struct VM *VMPtr;
+
+VMPtr new_vm(Inst *code);
+Object *vm_run(VMPtr vm);
+void free_vm(VMPtr vm);
+
+//
 // repl.c
 //
 
