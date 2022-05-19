@@ -21,6 +21,59 @@ static bool is_extended_identifier_char(char ch) {
   }
 }
 
+static int read_escaped_char(char **new_pos, char *p) {
+  *new_pos = p + 1;
+
+  switch (*p) {
+  case '"': return '"';
+  case '\\': return '\\';
+  case 'n': return '\n';
+  case 'r': return '\r';
+  case 'f': return '\f';
+  case 't': return '\t';
+  case 'a': return '\a';
+  case 'b': return '\b';
+  case '0': return '\0';
+  default:
+    return *p;
+  }
+}
+
+static char *string_literal_end(char *p) {
+  char *start = p;
+  for (; *p != '"'; p++) {
+    if (*p == '\n' || *p == '\0') {
+      printf("tokenize error: string literal is not closed by \"\n");
+      return NULL;
+    }
+    if (*p == '\\') {
+      p++;
+    }
+  }
+  return p;
+}
+
+static Token *read_string_literal(char *start) {
+  char *end = string_literal_end(start + 1);
+  if (end == NULL) {
+    return NULL;
+  }
+  char *buf = calloc(1, end - start);
+  int len = 0;
+
+  for (char *p = start + 1; p < end;) {
+    if (*p == '\\') {
+      buf[len++] = read_escaped_char(&p, p + 1);
+    } else {
+      buf[len++] = *p++;
+    }
+  }
+
+  Token *tok = new_token(TK_STR, start, end + 1);
+  tok->str = buf;
+  return tok;
+}
+
 Token *tokenize(char *input) {
   Token head = {};
   Token *cur = &head;
@@ -43,21 +96,13 @@ Token *tokenize(char *input) {
 
     // 文字列リテラル
     if (*input == '"') {
-      char *start = input;
-      while (*(++input) != '"') {
-        if (*input == '\n' || *input == '\0') {
-          printf("tokenize error: string literal is not closed by \"\n");
-          free_token(head.next);
-          return NULL;
-        }
+      Token *str_tok = read_string_literal(input);
+      if (str_tok == NULL) {
+        free_token(head.next);
+        return NULL;
       }
-      cur = cur->next = new_token(TK_STR, start, input);
-      int str_len = input - (start+1);
-      char *str_buf = calloc(1, str_len+1);
-      strncpy(str_buf, start+1, str_len);
-      str_buf[str_len] = '\0';
-      cur->str = str_buf;
-      input++;
+      cur = cur->next = str_tok;
+      input += cur->len;
       continue;
     }
 
