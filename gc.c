@@ -65,11 +65,15 @@ static void forward_roots(void) {
       exit(1);
     }
 
-    FORWARD(cur_root->obj);
+    if (cur_root->obj->tag != OBJ_BOOLEAN
+        && cur_root->obj->tag != OBJ_SYMBOL
+        && cur_root->obj != NIL) {
+      FORWARD(cur_root->obj);
 
-    cur_root->obj = free_ptr;
-    cur_root = cur_root->next;
-    free_ptr += obj_size;
+      cur_root->obj = free_ptr;
+      cur_root = cur_root->next;
+      free_ptr += obj_size;
+    }
   }
 }
 
@@ -120,11 +124,14 @@ static void forward_non_roots(void) {
     switch (cur_obj->tag) {
     case OBJ_CELL:
       if (CAR(cur_obj)->tag != OBJ_MOVED) {
+        if (CAR(cur_obj)->tag != OBJ_BOOLEAN
+            && CAR(cur_obj)->tag != OBJ_SYMBOL
+            && CAR(cur_obj) != NIL) {
+          FORWARD(CAR(cur_obj));
 
-        FORWARD(CAR(cur_obj));
-
-        CAR(cur_obj) = free_ptr;
-        free_ptr += sizeof(Object);
+          CAR(cur_obj) = free_ptr;
+          free_ptr += sizeof(Object);
+        }
       } else {
         CAR(cur_obj) = CAR(cur_obj)->fields_of.moved.address;
       }
