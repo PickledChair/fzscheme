@@ -92,7 +92,8 @@ void print_obj(Object *obj) {
     break;
   }
   case OBJ_CELL:
-    if (CAR(obj)->tag == OBJ_SYMBOL && CAR(obj) == intern_name("quote")) {
+    if (obj != NIL && CAR(obj)->tag == OBJ_SYMBOL
+        && CAR(obj) == intern_name("quote")) {
       if (CDR(obj)->tag == OBJ_CELL) {
         putchar('\'');
         print_obj(CAR(CDR(obj)));
