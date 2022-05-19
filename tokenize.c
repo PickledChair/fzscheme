@@ -131,11 +131,11 @@ Token *tokenize(char *input) {
       char *start = input;
       input++;
       if (*input == 't') {
-        cur = cur->next = new_token(TK_TRUE, start, input);
+        cur = cur->next = new_token(TK_TRUE, start, input+1);
         input++;
         continue;
       } else if (*input == 'f') {
-        cur = cur->next = new_token(TK_FALSE, start, input);
+        cur = cur->next = new_token(TK_FALSE, start, input+1);
         input++;
         continue;
       }
@@ -150,9 +150,9 @@ Token *tokenize(char *input) {
       while (isalnum(*input) || is_extended_identifier_char(*input)) {
         input++;
       }
-      char *end = input - 1;
+      char *end = input;
       cur = cur->next = new_token(TK_IDENT, start, end);
-      int name_len = end - start + 1;
+      int name_len = end - start;
       char *name_buf = calloc(1, name_len + 1);
       strncpy(name_buf, start, name_len);
       name_buf[name_len] = '\0';
