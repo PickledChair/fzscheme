@@ -78,7 +78,6 @@ struct Object {
     (obj) = (obj)->fields_of.moved.address;\
   }
 
-Object *new_bool_obj(bool value);
 Object *new_cell_obj(Object *car, Object *cdr);
 Object *new_integer_obj(long value);
 Object *new_string_obj(char *value);
@@ -89,6 +88,8 @@ void print_obj(Object *obj);
 // Object *process_moved_obj(Object *obj);
 
 extern Object *NIL;
+extern Object *TRUE;
+extern Object *FALSE;
 
 //
 // symbol_table.c

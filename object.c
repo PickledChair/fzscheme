@@ -3,17 +3,13 @@
 #include <stdlib.h>
 
 Object *NIL = &(Object){OBJ_CELL};
+Object *TRUE = &(Object){OBJ_BOOLEAN, {true}};
+Object *FALSE = &(Object){OBJ_BOOLEAN, {false}};
 
 static Object *new_obj(ObjectTag tag) {
   // Object *obj = (Object *)calloc(1, sizeof(Object));
   Object *obj = (Object *)fzscm_alloc(sizeof(Object));
   obj->tag = tag;
-  return obj;
-}
-
-Object *new_bool_obj(bool value) {
-  Object *obj = new_obj(OBJ_BOOLEAN);
-  obj->fields_of.boolean.value = value;
   return obj;
 }
 

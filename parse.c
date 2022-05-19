@@ -27,11 +27,9 @@ Object *parse_obj(Token **tok) {
   if (*tok == NULL) return NULL;
 
   switch ((*tok)->tag) {
-  case TK_FALSE: {
-    Object *obj = new_bool_obj(false);
+  case TK_FALSE:
     *tok = (*tok)->next;
-    return obj;
-  }
+    return FALSE;
   case TK_IDENT: {
     Object *obj = intern_name((*tok)->str);
     *tok = (*tok)->next;
@@ -58,10 +56,8 @@ Object *parse_obj(Token **tok) {
     *tok = (*tok)->next;
     return obj;
   }
-  case TK_TRUE: {
-    Object *obj = new_bool_obj(true);
+  case TK_TRUE:
     *tok = (*tok)->next;
-    return obj;
-  }
+    return TRUE;
   }
 }
