@@ -41,9 +41,6 @@ static Object *get_symbol_obj(char *name) {
 Object *intern_name(char *name) {
   Object *symbol = get_symbol_obj(name);
   if (symbol != NULL) {
-    if (debug_flag) {
-      printf("symbol `%s` already exists, so return it\n", name);
-    }
     return symbol;
   } else {
     uint32_t hash = str_hash(name);
