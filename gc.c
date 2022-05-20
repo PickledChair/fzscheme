@@ -40,10 +40,10 @@ void reset_fresh_obj_count(void) {
   fresh_obj_root_start = free_ptr;
 }
 
-#define FORWARD(from_ref)\
-  memcpy(free_ptr, from_ref, sizeof(Object));\
-  from_ref->tag = OBJ_MOVED;\
-  from_ref->fields_of.moved.address = free_ptr;
+#define FORWARD(from_ref)                                                      \
+  memcpy(free_ptr, (from_ref), sizeof(Object));                                \
+  (from_ref)->tag = OBJ_MOVED;                                                 \
+  (from_ref)->fields_of.moved.address = free_ptr;
 
 static void flip(void) {
   void *to_space_tmp = to_space;
@@ -55,9 +55,9 @@ static void forward_roots(void) {
   RootNode *cur_root = get_roots();
 
   while (cur_root != NULL) {
-    size_t obj_size = sizeof(*cur_root->obj);
+    size_t obj_size = sizeof(**cur_root->obj);
     if (debug_flag) {
-      print_obj(cur_root->obj);
+      print_obj(*cur_root->obj);
       printf(" object size: 0x%zx\n", obj_size);
     }
     if (free_ptr + obj_size > TOP_PTR) {
@@ -65,12 +65,11 @@ static void forward_roots(void) {
       exit(1);
     }
 
-    if (cur_root->obj->tag != OBJ_BOOLEAN
-        && cur_root->obj->tag != OBJ_SYMBOL
-        && cur_root->obj != NIL) {
-      FORWARD(cur_root->obj);
+    if ((*cur_root->obj)->tag != OBJ_BOOLEAN &&
+        (*cur_root->obj)->tag != OBJ_SYMBOL && *cur_root->obj != NIL) {
+      FORWARD(*cur_root->obj);
 
-      cur_root->obj = free_ptr;
+      *cur_root->obj = free_ptr;
       cur_root = cur_root->next;
       free_ptr += obj_size;
     }
@@ -225,11 +224,11 @@ void *fzscm_alloc(size_t size) {
 static RootNode *roots = &(RootNode){};
 static RootNode *top_root = NULL;
 
-void add_root(Object *obj) {
+void add_root(Object **obj) {
   if (debug_flag) {
     printf("add_root: ");
-    print_obj(obj);
-    printf(" (%p)\n", obj);
+    print_obj(*obj);
+    printf(" (%p)\n", *obj);
   }
   RootNode *node = calloc(1, sizeof(RootNode));
   node->obj = obj;

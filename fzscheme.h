@@ -110,12 +110,12 @@ void *fzscm_alloc(size_t size);
 
 typedef struct RootNode RootNode;
 struct RootNode {
-  Object *obj;
+  Object **obj;
   RootNode *next;
 };
 
 RootNode *get_roots(void);
-void add_root(Object *obj);
+void add_root(Object **obj);
 void clear_roots(void);
 
 //

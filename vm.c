@@ -70,13 +70,13 @@ Object *vm_run(VMPtr vm) {
 
 void vm_collect_roots(VMPtr vm) {
   for (StackNode *cur = vm->s; cur != NULL; cur = cur->next) {
-    add_root(cur->item);
+    add_root(&cur->item);
   }
 
   for (Inst *cur = vm->c; cur->tag != INST_STOP; cur = cur->next) {
     switch (cur->tag) {
     case INST_LDC:
-      add_root(cur->args_of.ldc.constant);
+      add_root(&cur->args_of.ldc.constant);
       break;
     default:
       break;
