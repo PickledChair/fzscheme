@@ -33,6 +33,7 @@ uint32_t str_hash(char *str);
 typedef enum ObjectTag {
   OBJ_BOOLEAN,
   OBJ_CELL,
+  OBJ_ERROR,
   OBJ_INTEGER,
   OBJ_STRING,
   OBJ_SYMBOL,
@@ -51,6 +52,10 @@ struct Object {
       Object *car;
       Object *cdr;
     } cell;
+
+    struct {
+      char *message;
+    } error;
 
     struct {
       long value;
@@ -79,6 +84,7 @@ struct Object {
   }
 
 Object *new_cell_obj(Object *car, Object *cdr);
+Object *new_error_obj(char *message);
 Object *new_integer_obj(long value);
 Object *new_string_obj(char *value);
 Object *new_symbol_obj(char *name);

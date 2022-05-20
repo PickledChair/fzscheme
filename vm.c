@@ -1,5 +1,7 @@
 #include "fzscheme.h"
+#include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 typedef struct StackNode StackNode;
 struct StackNode {
@@ -49,8 +51,11 @@ VMPtr new_vm(Inst *code) {
   return vm;
 }
 
+#define ERROR_MESSAGE_LEN 512
+
 Object *vm_run(VMPtr vm) {
   current_working_vm = vm;
+  char error_message[ERROR_MESSAGE_LEN] = {};
   for (;;) {
     switch (vm->c->tag) {
     case INST_DEF: {
@@ -67,11 +72,12 @@ Object *vm_run(VMPtr vm) {
       Object *value = get_from_global_env(vm->c->args_of.ldg.symbol);
       if (value != NULL) {
         s_push(&vm->s, value);
+      } else {
+        sprintf(error_message,
+                "symbol `%s` is not found in the global environment",
+                vm->c->args_of.ldg.symbol->fields_of.symbol.name);
+        return new_error_obj(strdup(error_message));
       }
-      // TODO: if value doesn't exist, return error.
-      // else {
-      //   return error;
-      // }
       break;
     }
     case INST_STOP:

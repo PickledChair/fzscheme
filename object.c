@@ -36,6 +36,12 @@ Object *new_cell_obj(Object *car, Object *cdr) {
 //   free(obj);
 // }
 
+Object *new_error_obj(char *message) {
+  Object *obj = new_obj(OBJ_ERROR);
+  obj->fields_of.error.message = message;
+  return obj;
+}
+
 Object *new_integer_obj(long value) {
   Object *obj = new_obj(OBJ_INTEGER);
   obj->fields_of.integer.value = value;
@@ -107,6 +113,9 @@ void print_obj(Object *obj) {
       }
       putchar(')');
     }
+    break;
+  case OBJ_ERROR:
+    printf("error: %s", obj->fields_of.error.message);
     break;
   case OBJ_INTEGER:
     printf("%ld", obj->fields_of.integer.value);
