@@ -13,6 +13,29 @@ static StackNode *new_stack_node(Object *item) {
   return stack;
 }
 
+static void s_push(StackNode **s, Object *item) {
+  StackNode *node = new_stack_node(item);
+  node->next = *s;
+  *s = node;
+}
+
+static Object *s_pop(StackNode **s) {
+  if (*s == NULL) return NULL;
+  Object *item = (*s)->item;
+  StackNode *next = (*s)->next;
+  free(*s);
+  *s = next;
+  return item;
+}
+
+static void free_s(StackNode *s) {
+  StackNode *next;
+  for (StackNode *cur = s; cur != NULL; cur = next) {
+    next = cur->next;
+    free(cur);
+  }
+}
+
 struct VM {
   StackNode *s;
   Inst *c;
@@ -25,25 +48,24 @@ VMPtr new_vm(Inst *code) {
 }
 
 Object *vm_run(VMPtr vm) {
-  Inst *cur_c = vm->c;
   for (;;) {
-    switch (cur_c->tag) {
+    switch (vm->c->tag) {
     case INST_LDC: {
-      StackNode *s_node = new_stack_node(cur_c->args_of.ldc.constant);
-      s_node->next = vm->s;
-      vm->s = s_node;
+      s_push(&vm->s, vm->c->args_of.ldc.constant);
       break;
     }
     case INST_STOP:
-      return vm->s->item;
+      return s_pop(&vm->s);
     }
 
-    cur_c = cur_c->next;
+    Inst *next_inst = vm->c->next;
+    free(vm->c);
+    vm->c = next_inst;
   }
 }
 
 void free_vm(VMPtr vm) {
-  free(vm->s);
+  free_s(vm->s);
   free_code(vm->c);
   free(vm);
 }

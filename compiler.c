@@ -33,7 +33,7 @@ void print_code(Inst *code, int level) {
   for (Inst *cur = code; cur != NULL; cur = cur->next) {
     switch (cur->tag) {
     case INST_LDC:
-      printf("ldc\t");
+      printf("ldc ");
       print_obj(cur->args_of.ldc.constant);
       putchar('\n');
       break;
