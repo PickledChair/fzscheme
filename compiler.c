@@ -53,8 +53,24 @@ static Inst *compile_expr(Object *obj, Inst *code) {
     ldc_code->next = code;
     return ldc_code;
   }
+  case OBJ_CELL:
+    if (obj != NIL) {
+      if (CAR(obj) == intern_name("quote")) {
+        if (CDR(obj)->tag == OBJ_CELL && CDR(obj) != NIL) {
+          Inst *ldc_code = inst_ldc(CAR(CDR(obj)));
+          ldc_code->next = code;
+          return ldc_code;
+        } else {
+          printf("compile error: shortage of the args of `quote`\n");
+          free_code(code);
+          return NULL;
+        }
+      }
+    }
+    // break;
   default:
     printf("compile error: not yet implemented instructions\n");
+    free_code(code);
     return NULL;
   }
 }
