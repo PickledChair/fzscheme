@@ -96,6 +96,8 @@ extern Object *FALSE;
 //
 
 Object *intern_name(char *name);
+Object *insert_to_global_env(Object *symbol, Object *value);
+Object *get_from_global_env(Object *symbol);
 void clear_symbol_table(void);
 
 //
@@ -159,7 +161,9 @@ Object *parse_objs(Token **tok);
 //
 
 typedef enum {
+  INST_DEF,
   INST_LDC,
+  INST_LDG,
   INST_STOP,
 } InstTag;
 
@@ -170,8 +174,16 @@ struct Inst {
 
   union {
     struct {
+      Object *symbol;
+    } def;
+
+    struct {
       Object *constant;
     } ldc;
+
+    struct {
+      Object *symbol;
+    } ldg;
   } args_of;
 };
 

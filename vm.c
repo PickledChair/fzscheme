@@ -53,8 +53,25 @@ Object *vm_run(VMPtr vm) {
   current_working_vm = vm;
   for (;;) {
     switch (vm->c->tag) {
+    case INST_DEF: {
+      Object *symbol = vm->c->args_of.def.symbol;
+      insert_to_global_env(symbol, s_pop(&vm->s));
+      s_push(&vm->s, symbol);
+      break;
+    }
     case INST_LDC: {
       s_push(&vm->s, vm->c->args_of.ldc.constant);
+      break;
+    }
+    case INST_LDG: {
+      Object *value = get_from_global_env(vm->c->args_of.ldg.symbol);
+      if (value != NULL) {
+        s_push(&vm->s, value);
+      }
+      // TODO: if value doesn't exist, return error.
+      // else {
+      //   return error;
+      // }
       break;
     }
     case INST_STOP:

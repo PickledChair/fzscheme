@@ -9,14 +9,15 @@
 typedef struct SymTableEntry SymTableEntry;
 struct SymTableEntry {
   uint32_t hash;
+  Object *symbol;
   Object *value;
   SymTableEntry *next;
 };
 
-static SymTableEntry *new_sym_table_entry(uint32_t hash, Object *value) {
+static SymTableEntry *new_sym_table_entry(uint32_t hash, Object *symbol) {
   SymTableEntry *ent = calloc(1, sizeof(SymTableEntry));
   ent->hash = hash;
-  ent->value = value;
+  ent->symbol = symbol;
   return ent;
 }
 
@@ -28,8 +29,8 @@ static Object *get_symbol_obj(char *name) {
 
   while (ent) {
     if (hash == ent->hash) {
-      if (strcmp(name, ent->value->fields_of.symbol.name) == 0) {
-        return ent->value;
+      if (strcmp(name, ent->symbol->fields_of.symbol.name) == 0) {
+        return ent->symbol;
       }
     }
     ent = ent->next;
@@ -66,6 +67,50 @@ Object *intern_name(char *name) {
   }
 }
 
+Object *insert_to_global_env(Object *symbol, Object *value) {
+  uint32_t hash = str_hash(symbol->fields_of.symbol.name);
+  size_t idx = hash % SYMBOL_TABLE_SIZE;
+
+  SymTableEntry *cur_ent = symbol_table[idx];
+  for (;;) {
+    if (cur_ent->hash == hash) {
+      if (strcmp(cur_ent->symbol->fields_of.symbol.name,
+                 symbol->fields_of.symbol.name) == 0) {
+        Object *res_value = cur_ent->value;
+        cur_ent->value = value;
+        return res_value;
+      }
+    }
+    if (cur_ent->next == NULL) {
+      break;
+    }
+    cur_ent = cur_ent->next;
+  }
+
+  return NULL;
+}
+
+Object *get_from_global_env(Object *symbol) {
+  uint32_t hash = str_hash(symbol->fields_of.symbol.name);
+  size_t idx = hash % SYMBOL_TABLE_SIZE;
+
+  SymTableEntry *cur_ent = symbol_table[idx];
+  for (;;) {
+    if (cur_ent->hash == hash) {
+      if (strcmp(cur_ent->symbol->fields_of.symbol.name,
+                 symbol->fields_of.symbol.name) == 0) {
+        return cur_ent->value;
+      }
+    }
+    if (cur_ent->next == NULL) {
+      break;
+    }
+    cur_ent = cur_ent->next;
+  }
+
+  return NULL;
+}
+
 void clear_symbol_table(void) {
   for (size_t i = 0; i < SYMBOL_TABLE_SIZE; i++) {
     if (symbol_table[i] != NULL) {
@@ -73,9 +118,9 @@ void clear_symbol_table(void) {
       while (ent) {
         next_ent = ent->next;
         if (debug_flag) {
-          printf("free symbol: %s\n", ent->value->fields_of.symbol.name);
+          printf("free symbol: %s\n", ent->symbol->fields_of.symbol.name);
         }
-        free_symbol_obj(ent->value);
+        free_symbol_obj(ent->symbol);
         free(ent);
         ent = next_ent;
       }
