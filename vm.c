@@ -75,6 +75,7 @@ Object *vm_run(VMPtr vm) {
         sprintf(error_message,
                 "symbol `%s` is not found in the global environment",
                 vm->c->args_of.ldg.symbol->fields_of.symbol.name);
+        current_working_vm = NULL;
         return new_error_obj(error_message);
       }
       break;
