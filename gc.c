@@ -70,9 +70,9 @@ static void forward_roots(void) {
       FORWARD(*cur_root->obj);
 
       *cur_root->obj = free_ptr;
-      cur_root = cur_root->next;
       free_ptr += obj_size;
     }
+    cur_root = cur_root->next;
   }
 }
 
