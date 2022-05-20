@@ -171,6 +171,11 @@ void fzscm_gc(void) {
   // free_ptr の更新を新しい to_space から始めるようにセット
   free_ptr = to_space;
 
+  // vm からルート集合を得る
+  if (current_working_vm != NULL) {
+    vm_collect_roots(current_working_vm);
+  }
+
   // root の forward 処理
   forward_roots();
   forward_fresh_obj_roots();
@@ -181,7 +186,11 @@ void fzscm_gc(void) {
   // 文字列は Scheme オブジェクトとは別に GC を行う
   string_list_gc();
 
-  fresh_obj_root_start = free_ptr;
+  // GC 開始時に集めたルート集合のリストを破棄
+  clear_roots();
+
+  // GC 前までに新しく確保したメモリ領域の情報を初期化
+  reset_fresh_obj_count();
 }
 
 static void print_memory_status(void) {

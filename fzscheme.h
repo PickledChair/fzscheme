@@ -184,9 +184,11 @@ Inst *compile(Object *ast);
 //
 
 typedef struct VM *VMPtr;
+extern VMPtr current_working_vm;
 
 VMPtr new_vm(Inst *code);
 Object *vm_run(VMPtr vm);
+void vm_collect_roots(VMPtr vm);
 void free_vm(VMPtr vm);
 
 //

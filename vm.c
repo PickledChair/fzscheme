@@ -41,6 +41,8 @@ struct VM {
   Inst *c;
 } VM;
 
+VMPtr current_working_vm = NULL;
+
 VMPtr new_vm(Inst *code) {
   VMPtr vm = calloc(1, sizeof(VM));
   vm->c = code;
@@ -48,6 +50,7 @@ VMPtr new_vm(Inst *code) {
 }
 
 Object *vm_run(VMPtr vm) {
+  current_working_vm = vm;
   for (;;) {
     switch (vm->c->tag) {
     case INST_LDC: {
@@ -55,12 +58,29 @@ Object *vm_run(VMPtr vm) {
       break;
     }
     case INST_STOP:
+      current_working_vm = NULL;
       return s_pop(&vm->s);
     }
 
     Inst *next_inst = vm->c->next;
     free(vm->c);
     vm->c = next_inst;
+  }
+}
+
+void vm_collect_roots(VMPtr vm) {
+  for (StackNode *cur = vm->s; cur != NULL; cur = cur->next) {
+    add_root(cur->item);
+  }
+
+  for (Inst *cur = vm->c; cur->tag != INST_STOP; cur = cur->next) {
+    switch (cur->tag) {
+    case INST_LDC:
+      add_root(cur->args_of.ldc.constant);
+      break;
+    default:
+      break;
+    }
   }
 }
 

@@ -40,8 +40,6 @@ int repl(void) {
   int paren_level = 0;
 
   for (;;) {
-    clear_roots();
-
     if (paren_level == 0) {
       printf(">>> ");
     } else {
@@ -103,8 +101,6 @@ int repl(void) {
       Token *tok_tmp = top_tok;
       Object *obj = parse_obj(&top_tok);
       if (obj != NULL) {
-        add_root(obj);
-        reset_fresh_obj_count();
         if (debug_flag) {
           printf("AST:\n\n");
           print_obj(obj);
@@ -125,6 +121,7 @@ int repl(void) {
           putchar('\n');
           free_vm(vm);
         }
+        reset_fresh_obj_count();
         // free_obj(obj);
       }
       top_tok = tok_tmp;
