@@ -111,6 +111,24 @@ Object *get_from_global_env(Object *symbol) {
   return NULL;
 }
 
+void global_env_collect_roots(void) {
+  for (size_t i = 0; i < SYMBOL_TABLE_SIZE; i++) {
+    if (symbol_table[i] != NULL) {
+      SymTableEntry *ent = symbol_table[i];
+      while (ent) {
+        if (ent->value != NULL) {
+          if (debug_flag) {
+            printf("root in global environment: %s\n",
+                  ent->symbol->fields_of.symbol.name);
+          }
+          add_root(&ent->value);
+        }
+        ent = ent->next;
+      }
+    }
+  }
+}
+
 void clear_symbol_table(void) {
   for (size_t i = 0; i < SYMBOL_TABLE_SIZE; i++) {
     if (symbol_table[i] != NULL) {

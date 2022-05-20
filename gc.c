@@ -170,6 +170,9 @@ void fzscm_gc(void) {
   // free_ptr の更新を新しい to_space から始めるようにセット
   free_ptr = to_space;
 
+  // グローバル環境からルート集合を得る
+  global_env_collect_roots();
+
   // vm からルート集合を得る
   if (current_working_vm != NULL) {
     vm_collect_roots(current_working_vm);

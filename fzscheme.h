@@ -104,6 +104,7 @@ extern Object *FALSE;
 Object *intern_name(char *name);
 Object *insert_to_global_env(Object *symbol, Object *value);
 Object *get_from_global_env(Object *symbol);
+void global_env_collect_roots(void);
 void clear_symbol_table(void);
 
 //
