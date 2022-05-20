@@ -54,7 +54,7 @@ struct Object {
     } cell;
 
     struct {
-      char *message;
+      StringNode *message;
     } error;
 
     struct {

@@ -38,7 +38,7 @@ Object *new_cell_obj(Object *car, Object *cdr) {
 
 Object *new_error_obj(char *message) {
   Object *obj = new_obj(OBJ_ERROR);
-  obj->fields_of.error.message = message;
+  obj->fields_of.error.message = new_string_node(message);
   return obj;
 }
 
@@ -115,7 +115,7 @@ void print_obj(Object *obj) {
     }
     break;
   case OBJ_ERROR:
-    printf("error: %s", obj->fields_of.error.message);
+    printf("error: %s", obj->fields_of.error.message->value);
     break;
   case OBJ_INTEGER:
     printf("%ld", obj->fields_of.integer.value);

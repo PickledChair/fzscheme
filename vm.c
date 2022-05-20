@@ -1,7 +1,6 @@
 #include "fzscheme.h"
 #include <stdio.h>
 #include <stdlib.h>
-#include <string.h>
 
 typedef struct StackNode StackNode;
 struct StackNode {
@@ -76,7 +75,7 @@ Object *vm_run(VMPtr vm) {
         sprintf(error_message,
                 "symbol `%s` is not found in the global environment",
                 vm->c->args_of.ldg.symbol->fields_of.symbol.name);
-        return new_error_obj(strdup(error_message));
+        return new_error_obj(error_message);
       }
       break;
     }
