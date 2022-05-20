@@ -1,5 +1,4 @@
 #include "fzscheme.h"
-#include <string.h>
 
 Object *parse_objs(Token **tok) {
   Object *head = parse_obj(tok);
@@ -52,7 +51,7 @@ Object *parse_obj(Token **tok) {
     *tok = (*tok)->next;
     return NULL;
   case TK_STR: {
-    Object *obj = new_string_obj(strdup((*tok)->str));
+    Object *obj = new_string_obj((*tok)->str);
     *tok = (*tok)->next;
     return obj;
   }
