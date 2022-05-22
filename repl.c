@@ -99,20 +99,23 @@ int repl(void) {
 
     {
       Token *tok_tmp = top_tok;
-      Object *obj = parse_obj(&top_tok);
-      if (obj != NULL) {
+      Object *ast = parse_obj(&top_tok);
+      if (ast != NULL) {
         if (debug_flag) {
           printf("AST:\n\n");
-          print_obj(obj);
+          print_obj(ast);
           printf("\n\n");
         }
 
-        Inst *code = compile(obj);
+        Inst *code = compile(ast);
         if (debug_flag && code != NULL) {
           printf("VM CODE:\n\n");
           print_code(code, 0);
           putchar('\n');
         }
+        // ast が不要になるので、ast のために確保されているメモリ領域を
+        // ルート集合から除外する
+        reset_gc_state();
         if (code != NULL) {
           VMPtr vm = new_vm(code);
           Object *result_obj = vm_run(vm);
@@ -120,8 +123,8 @@ int repl(void) {
           print_obj(result_obj);
           putchar('\n');
           free_vm(vm);
+          reset_gc_state();
         }
-        reset_fresh_obj_count();
         // free_obj(obj);
       }
       top_tok = tok_tmp;

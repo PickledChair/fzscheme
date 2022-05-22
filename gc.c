@@ -13,6 +13,7 @@ static void *free_ptr;
 
 static void *fresh_obj_root_start, *fresh_obj_root_end;
 static size_t fresh_obj_count = 0;
+static bool gc_occured_before_reset_gc_state = false;
 
 void fzscm_memspace_init(size_t semispace_size) {
   if (semispace_size >= sizeof(Object)) {
@@ -35,9 +36,14 @@ static void inc_fresh_obj_count(void) {
   fresh_obj_count++;
 }
 
-void reset_fresh_obj_count(void) {
+static void reset_fresh_obj_count(void) {
   fresh_obj_count = 0;
   fresh_obj_root_start = free_ptr;
+}
+
+void reset_gc_state(void) {
+  reset_fresh_obj_count();
+  gc_occured_before_reset_gc_state = false;
 }
 
 #define FORWARD(from_ref)                                                      \
@@ -51,22 +57,25 @@ static void flip(void) {
   from_space = to_space_tmp;
 }
 
+static bool obj_is_in_gc_heap(Object *obj) {
+  return (obj->tag != OBJ_BOOLEAN && obj->tag != OBJ_SYMBOL && obj != NIL);
+}
+
 static void forward_roots(void) {
   RootNode *cur_root = get_roots();
 
   while (cur_root != NULL) {
-    size_t obj_size = sizeof(**cur_root->obj);
-    if (debug_flag) {
-      print_obj(*cur_root->obj);
-      printf(" object size: 0x%zx\n", obj_size);
-    }
-    if (free_ptr + obj_size > TOP_PTR) {
-      printf("memory error: shortage of memory\n");
-      exit(1);
-    }
+    if (obj_is_in_gc_heap(*cur_root->obj)) {
+      size_t obj_size = sizeof(**cur_root->obj);
+      if (debug_flag) {
+        print_obj(*cur_root->obj);
+        printf(" object size: 0x%zx\n", obj_size);
+      }
+      if (free_ptr + obj_size > TOP_PTR) {
+        printf("memory error: shortage of memory\n");
+        exit(1);
+      }
 
-    if ((*cur_root->obj)->tag != OBJ_BOOLEAN &&
-        (*cur_root->obj)->tag != OBJ_SYMBOL && *cur_root->obj != NIL) {
       FORWARD(*cur_root->obj);
 
       *cur_root->obj = free_ptr;
@@ -123,9 +132,7 @@ static void forward_non_roots(void) {
     switch (cur_obj->tag) {
     case OBJ_CELL:
       if (CAR(cur_obj)->tag != OBJ_MOVED) {
-        if (CAR(cur_obj)->tag != OBJ_BOOLEAN
-            && CAR(cur_obj)->tag != OBJ_SYMBOL
-            && CAR(cur_obj) != NIL) {
+        if (obj_is_in_gc_heap(CAR(cur_obj))) {
           FORWARD(CAR(cur_obj));
 
           CAR(cur_obj) = free_ptr;
@@ -159,6 +166,10 @@ static void forward_non_roots(void) {
 }
 
 void fzscm_gc(void) {
+  if (gc_occured_before_reset_gc_state) {
+    printf("gc error: there are some new objects those are not in root set\n");
+    exit(1);
+  }
   memset(from_space, 0, extent);
 
   // flip 処理
@@ -193,6 +204,8 @@ void fzscm_gc(void) {
 
   // GC 前までに新しく確保したメモリ領域の情報を初期化
   reset_fresh_obj_count();
+
+  gc_occured_before_reset_gc_state = true;
 }
 
 static void print_memory_status(void) {
