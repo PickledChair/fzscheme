@@ -45,6 +45,7 @@ int repl(void) {
     } else {
       printf("... ");
     }
+    fflush(stdout);
 
     if (fgets(buffer, INPUT_BUF_SIZE, stdin) == NULL) {
       printf("wrong input.\n");
