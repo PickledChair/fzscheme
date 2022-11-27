@@ -29,7 +29,8 @@ int main(int argc, char *argv[]) {
   repl();
 
   fzscm_memspace_fin();
-  clear_string_list();
+  // clear_string_list();
+  DOUBLY_LINKED_LIST_CLEAR_FUNC_NAME(StringNode)();
   clear_symbol_table();
 
   return 0;

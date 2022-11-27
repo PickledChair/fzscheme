@@ -1,24 +1,31 @@
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
+#include <string.h>
 
 extern bool debug_flag;
+
+#include "doubly_linked_list.h"
 
 //
 // string_list.c
 //
 
-typedef struct StringNode StringNode;
-struct StringNode {
-  char *value;
-  StringNode *prev;
-  StringNode *next;
-};
+// typedef struct StringNode StringNode;
+// struct StringNode {
+//   char *value;
+//   StringNode *prev;
+//   StringNode *next;
+// };
+DEFINE_NODE_TYPE(StringNode, char *)
 
-StringNode *new_string_node(char *value);
+// StringNode *new_string_node(char *value);
+StringNode *NODE_TYPE_NEW_FUNC_NAME(StringNode)(char *value);
 void mark_string_node(StringNode *node);
 void string_list_gc(void);
-void clear_string_list(void);
+// void clear_string_list(void);
+void DOUBLY_LINKED_LIST_CLEAR_FUNC_NAME(StringNode)(void);
+
 
 //
 // hash.c
@@ -78,9 +85,9 @@ struct Object {
 #define CAR(obj) (obj)->fields_of.cell.car
 #define CDR(obj) (obj)->fields_of.cell.cdr
 
-#define CHECK_OBJ_MOVING(obj)\
-  if ((obj)->tag == OBJ_MOVED) {\
-    (obj) = (obj)->fields_of.moved.address;\
+#define CHECK_OBJ_MOVING(obj)               \
+  if ((obj)->tag == OBJ_MOVED) {            \
+    (obj) = (obj)->fields_of.moved.address; \
   }
 
 Object *new_cell_obj(Object *car, Object *cdr);
