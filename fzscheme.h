@@ -19,11 +19,9 @@ extern bool debug_flag;
 // };
 DEFINE_NODE_TYPE(StringNode, char *)
 
-// StringNode *new_string_node(char *value);
 StringNode *NODE_TYPE_NEW_FUNC_NAME(StringNode)(char *value);
 void mark_string_node(StringNode *node);
 void string_list_gc(void);
-// void clear_string_list(void);
 void DOUBLY_LINKED_LIST_CLEAR_FUNC_NAME(StringNode)(void);
 
 
@@ -126,16 +124,16 @@ void *fzscm_alloc(size_t size);
 
 // typedef struct RootNode RootNode;
 // struct RootNode {
-//   Object **obj;
+//   Object **value;
+//   RootNode *prev;
 //   RootNode *next;
 // };
 DEFINE_NODE_TYPE(RootNode, Object **)
 
 RootNode *get_roots(void);
-// void add_root(Object **obj);
+bool roots_is_empty(void);
 RootNode *NODE_TYPE_NEW_FUNC_NAME(RootNode)(Object **value);
 void DOUBLY_LINKED_LIST_REMOVE_FUNC_NAME(RootNode)(RootNode *node);
-// void clear_roots(void);
 void DOUBLY_LINKED_LIST_CLEAR_FUNC_NAME(RootNode)(void);
 
 //

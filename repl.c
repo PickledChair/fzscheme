@@ -114,8 +114,9 @@ int repl(void) {
           print_code(code, 0);
           putchar('\n');
         }
-        // ast が不要になるので、ast のために確保されているメモリ領域を
-        // ルート集合から除外する
+        // TODO: reset_gc_state() よりも賢い方法を考える
+        //       一度の GC で必要なメモリを確保できず再度 GC が走ると予期せぬ挙動となる
+        //       この関数を呼ぶまで再度の GC を許容しないようにしているが、より良い方法を考えたい
         reset_gc_state();
         if (code != NULL) {
           VMPtr vm = new_vm(code);
@@ -124,7 +125,7 @@ int repl(void) {
           print_obj(result_obj);
           putchar('\n');
           free_vm(vm);
-          reset_gc_state();
+          // reset_gc_state();
         }
         // free_obj(obj);
       }

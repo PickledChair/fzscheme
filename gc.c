@@ -11,8 +11,6 @@ static void *free_ptr;
 
 #define TOP_PTR (to_space + extent)
 
-static void *fresh_obj_root_start, *fresh_obj_root_end;
-static size_t fresh_obj_count = 0;
 static bool gc_occured_before_reset_gc_state = false;
 
 void fzscm_memspace_init(size_t semispace_size) {
@@ -29,20 +27,7 @@ void fzscm_memspace_fin(void) {
   free(from_space);
 }
 
-static void inc_fresh_obj_count(void) {
-  if (fresh_obj_count == 0) {
-    fresh_obj_root_start = free_ptr;
-  }
-  fresh_obj_count++;
-}
-
-static void reset_fresh_obj_count(void) {
-  fresh_obj_count = 0;
-  fresh_obj_root_start = free_ptr;
-}
-
 void reset_gc_state(void) {
-  reset_fresh_obj_count();
   gc_occured_before_reset_gc_state = false;
 }
 
@@ -58,7 +43,7 @@ static void flip(void) {
 }
 
 static bool obj_is_in_gc_heap(Object *obj) {
-  return (obj->tag != OBJ_BOOLEAN && obj->tag != OBJ_SYMBOL && obj != NIL);
+  return (obj != NULL && obj->tag != OBJ_BOOLEAN && obj->tag != OBJ_SYMBOL && obj != NIL);
 }
 
 static void forward_roots(void) {
@@ -76,40 +61,18 @@ static void forward_roots(void) {
         exit(1);
       }
 
-      FORWARD(*cur_root->value);
+      if ((*cur_root->value)->tag != OBJ_MOVED) {
+        FORWARD(*cur_root->value);
 
-      *cur_root->value = free_ptr;
-      free_ptr += obj_size;
+        if ((*cur_root->value)->tag == OBJ_STRING) {
+          mark_string_node((*cur_root->value)->fields_of.string.str_node);
+        }
+
+        *cur_root->value = free_ptr;
+        free_ptr += obj_size;
+      }
     }
     cur_root = cur_root->next;
-  }
-}
-
-static void forward_fresh_obj_roots(void) {
-  void *cur_root = fresh_obj_root_start;
-  if (debug_flag) {
-    // 最後にメモリ確保しようとしたオブジェクトを除く数
-    printf("fresh obj count: %zu\n", fresh_obj_count - 1);
-  }
-  for (size_t root_cnt = 1; root_cnt < fresh_obj_count;
-       root_cnt++, cur_root += sizeof(Object)) {
-    if (free_ptr + sizeof(Object) > TOP_PTR) {
-      printf("memory error: shortage of memory\n");
-      exit(1);
-    }
-    Object *cur_obj = (Object *)cur_root;
-    if (debug_flag) {
-      printf("fresh obj (%p): ", cur_obj);
-      print_obj(cur_obj);
-      printf("\n");
-    }
-
-    FORWARD(cur_obj);
-
-    if (fresh_obj_root_start == cur_root) {
-      fresh_obj_root_start = free_ptr;
-    }
-    free_ptr += sizeof(Object);
   }
 }
 
@@ -143,11 +106,12 @@ static void forward_non_roots(void) {
       }
       if (CDR(cur_obj) != NIL) {
         if (CDR(cur_obj)->tag != OBJ_MOVED) {
+          if (obj_is_in_gc_heap(CDR(cur_obj))) {
+            FORWARD(CDR(cur_obj));
 
-          FORWARD(CDR(cur_obj));
-
-          CDR(cur_obj) = free_ptr;
-          free_ptr += sizeof(Object);
+            CDR(cur_obj) = free_ptr;
+            free_ptr += sizeof(Object);
+          }
         } else {
           CDR(cur_obj) = CDR(cur_obj)->fields_of.moved.address;
         }
@@ -175,9 +139,6 @@ void fzscm_gc(void) {
   // flip 処理
   flip();
 
-  // GC 前までに新しく確保したメモリ領域を記憶
-  fresh_obj_root_end = free_ptr;
-
   // free_ptr の更新を新しい to_space から始めるようにセット
   free_ptr = to_space;
 
@@ -191,7 +152,6 @@ void fzscm_gc(void) {
 
   // root の forward 処理
   forward_roots();
-  forward_fresh_obj_roots();
 
   // root 以外の forward 処理
   forward_non_roots();
@@ -200,11 +160,7 @@ void fzscm_gc(void) {
   string_list_gc();
 
   // GC 開始時に集めたルート集合のリストを破棄
-  // clear_roots();
   DOUBLY_LINKED_LIST_CLEAR_FUNC_NAME(RootNode)();
-
-  // GC 前までに新しく確保したメモリ領域の情報を初期化
-  reset_fresh_obj_count();
 
   gc_occured_before_reset_gc_state = true;
 }
@@ -219,7 +175,6 @@ void *fzscm_alloc(size_t size) {
   if (debug_flag) {
     print_memory_status();
   }
-  inc_fresh_obj_count();
   if (free_ptr + size > TOP_PTR) {
     fzscm_gc();
     if (free_ptr + size > TOP_PTR) {
@@ -238,37 +193,12 @@ void *fzscm_alloc(size_t size) {
   return ptr;
 }
 
-// static RootNode *roots = &(RootNode){};
-// static RootNode *top_root = NULL;
-
-// void add_root(Object **obj) {
-//   if (debug_flag) {
-//     printf("add_root: ");
-//     print_obj(*obj);
-//     printf(" (%p)\n", *obj);
-//   }
-//   RootNode *node = calloc(1, sizeof(RootNode));
-//   node->value = obj;
-//   if (top_root == NULL) {
-//     roots->next = top_root = node;
-//   } else {
-//     top_root = top_root->next = node;
-//   }
-// }
-
 DEFINE_DOUBLY_LINKED_LIST_FUNCS(RootNode, Object *, false)
 
 RootNode *get_roots(void) {
   return DOUBLY_LINKED_LIST_HEAD_NAME(RootNode)->next;
 }
 
-// void clear_roots(void) {
-//   RootNode *cur = roots->next;
-//   while (cur != NULL) {
-//     RootNode *next = cur->next;
-//     free(cur);
-//     cur = next;
-//   }
-//   top_root = NULL;
-//   roots->next = NULL;
-// }
+bool roots_is_empty(void) {
+  return DOUBLY_LINKED_LIST_HEAD_NAME(RootNode)->next == NULL;
+}
