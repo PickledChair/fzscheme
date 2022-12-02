@@ -59,7 +59,7 @@
       next = cur->next;                                                       \
       if (SHOULD_FREE_VALUE && strcmp(#NODE_TYPE_NAME, "StringNode") == 0) {  \
         if (debug_flag) {                                                     \
-          printf("free string: %s\n", cur->value);                            \
+          printf("free string: %s\n", (char *)cur->value);                    \
         }                                                                     \
         free(cur->value);                                                     \
       }                                                                       \
