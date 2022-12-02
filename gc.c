@@ -65,10 +65,10 @@ static void forward_roots(void) {
   RootNode *cur_root = get_roots();
 
   while (cur_root != NULL) {
-    if (obj_is_in_gc_heap(*cur_root->obj)) {
-      size_t obj_size = sizeof(**cur_root->obj);
+    if (obj_is_in_gc_heap(*cur_root->value)) {
+      size_t obj_size = sizeof(**cur_root->value);
       if (debug_flag) {
-        print_obj(*cur_root->obj);
+        print_obj(*cur_root->value);
         printf(" object size: 0x%zx\n", obj_size);
       }
       if (free_ptr + obj_size > TOP_PTR) {
@@ -76,9 +76,9 @@ static void forward_roots(void) {
         exit(1);
       }
 
-      FORWARD(*cur_root->obj);
+      FORWARD(*cur_root->value);
 
-      *cur_root->obj = free_ptr;
+      *cur_root->value = free_ptr;
       free_ptr += obj_size;
     }
     cur_root = cur_root->next;
@@ -200,7 +200,8 @@ void fzscm_gc(void) {
   string_list_gc();
 
   // GC 開始時に集めたルート集合のリストを破棄
-  clear_roots();
+  // clear_roots();
+  DOUBLY_LINKED_LIST_CLEAR_FUNC_NAME(RootNode)();
 
   // GC 前までに新しく確保したメモリ領域の情報を初期化
   reset_fresh_obj_count();
@@ -237,33 +238,37 @@ void *fzscm_alloc(size_t size) {
   return ptr;
 }
 
-static RootNode *roots = &(RootNode){};
-static RootNode *top_root = NULL;
+// static RootNode *roots = &(RootNode){};
+// static RootNode *top_root = NULL;
 
-void add_root(Object **obj) {
-  if (debug_flag) {
-    printf("add_root: ");
-    print_obj(*obj);
-    printf(" (%p)\n", *obj);
-  }
-  RootNode *node = calloc(1, sizeof(RootNode));
-  node->obj = obj;
-  if (top_root == NULL) {
-    roots->next = top_root = node;
-  } else {
-    top_root = top_root->next = node;
-  }
+// void add_root(Object **obj) {
+//   if (debug_flag) {
+//     printf("add_root: ");
+//     print_obj(*obj);
+//     printf(" (%p)\n", *obj);
+//   }
+//   RootNode *node = calloc(1, sizeof(RootNode));
+//   node->value = obj;
+//   if (top_root == NULL) {
+//     roots->next = top_root = node;
+//   } else {
+//     top_root = top_root->next = node;
+//   }
+// }
+
+DEFINE_DOUBLY_LINKED_LIST_FUNCS(RootNode, Object *, false)
+
+RootNode *get_roots(void) {
+  return DOUBLY_LINKED_LIST_HEAD_NAME(RootNode)->next;
 }
 
-RootNode *get_roots(void) { return roots->next; }
-
-void clear_roots(void) {
-  RootNode *cur = roots->next;
-  while (cur != NULL) {
-    RootNode *next = cur->next;
-    free(cur);
-    cur = next;
-  }
-  top_root = NULL;
-  roots->next = NULL;
-}
+// void clear_roots(void) {
+//   RootNode *cur = roots->next;
+//   while (cur != NULL) {
+//     RootNode *next = cur->next;
+//     free(cur);
+//     cur = next;
+//   }
+//   top_root = NULL;
+//   roots->next = NULL;
+// }

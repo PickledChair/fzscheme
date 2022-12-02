@@ -124,15 +124,19 @@ void reset_gc_state(void);
 void fzscm_gc(void);
 void *fzscm_alloc(size_t size);
 
-typedef struct RootNode RootNode;
-struct RootNode {
-  Object **obj;
-  RootNode *next;
-};
+// typedef struct RootNode RootNode;
+// struct RootNode {
+//   Object **obj;
+//   RootNode *next;
+// };
+DEFINE_NODE_TYPE(RootNode, Object **)
 
 RootNode *get_roots(void);
-void add_root(Object **obj);
-void clear_roots(void);
+// void add_root(Object **obj);
+RootNode *NODE_TYPE_NEW_FUNC_NAME(RootNode)(Object **value);
+void DOUBLY_LINKED_LIST_REMOVE_FUNC_NAME(RootNode)(RootNode *node);
+// void clear_roots(void);
+void DOUBLY_LINKED_LIST_CLEAR_FUNC_NAME(RootNode)(void);
 
 //
 // tokenize.c

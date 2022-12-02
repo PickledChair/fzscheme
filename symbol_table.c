@@ -121,7 +121,8 @@ void global_env_collect_roots(void) {
             printf("root in global environment: %s\n",
                   ent->symbol->fields_of.symbol.name);
           }
-          add_root(&ent->value);
+          // add_root(&ent->value);
+          NODE_TYPE_NEW_FUNC_NAME(RootNode)(&ent->value);
         }
         ent = ent->next;
       }
