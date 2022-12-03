@@ -130,6 +130,16 @@ void global_env_collect_roots(void) {
   }
 }
 
+#define REGISTER_PRIMITIVE(PRIM_NAME) \
+  prim_##PRIM_NAME##_obj->fields_of.primitive.symbol = intern_name(#PRIM_NAME); \
+  insert_to_global_env(intern_name(#PRIM_NAME), prim_##PRIM_NAME##_obj)
+
+void init_symbol_table(void) {
+  REGISTER_PRIMITIVE(car);
+  REGISTER_PRIMITIVE(display);
+  REGISTER_PRIMITIVE(newline);
+}
+
 void clear_symbol_table(void) {
   for (size_t i = 0; i < SYMBOL_TABLE_SIZE; i++) {
     if (symbol_table[i] != NULL) {

@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+Object *UNDEF = &(Object){OBJ_UNDEF};
 Object *NIL = &(Object){OBJ_CELL};
 Object *TRUE = &(Object){OBJ_BOOLEAN, {true}};
 Object *FALSE = &(Object){OBJ_BOOLEAN, {false}};
@@ -38,7 +39,6 @@ Object *new_cell_obj(Object *car, Object *cdr) {
 
 Object *new_error_obj(char *message) {
   Object *obj = new_obj(OBJ_ERROR);
-  // obj->fields_of.error.message = new_string_node(message);
   obj->fields_of.error.message = NODE_TYPE_NEW_FUNC_NAME(StringNode)(strdup(message));
   return obj;
 }
@@ -51,7 +51,6 @@ Object *new_integer_obj(long value) {
 
 Object *new_string_obj(char *value) {
   Object *obj = new_obj(OBJ_STRING);
-  // obj->fields_of.string.str_node = new_string_node(value);
   obj->fields_of.string.str_node = NODE_TYPE_NEW_FUNC_NAME(StringNode)(strdup(value));
   return obj;
 }
@@ -89,6 +88,9 @@ void free_symbol_obj(Object *obj) {
 
 void print_obj(Object *obj) {
   switch (obj->tag) {
+  case OBJ_UNDEF:
+    printf("#<undef>");
+    break;
   case OBJ_BOOLEAN: {
     char *bool_literal;
     if (obj->fields_of.boolean.value) {
@@ -121,6 +123,9 @@ void print_obj(Object *obj) {
     break;
   case OBJ_INTEGER:
     printf("%ld", obj->fields_of.integer.value);
+    break;
+  case OBJ_PRIMITIVE:
+    printf("#<primitive %s>", obj->fields_of.primitive.symbol->fields_of.symbol.name);
     break;
   case OBJ_STRING:
     printf("%s", obj->fields_of.string.str_node->value);

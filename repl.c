@@ -39,6 +39,8 @@ int repl(void) {
   Token *top_tok = NULL, *cur_tok = NULL;
   int paren_level = 0;
 
+  init_symbol_table();
+
   for (;;) {
     if (paren_level == 0) {
       printf(">>> ");
@@ -100,6 +102,10 @@ int repl(void) {
 
     {
       Token *tok_tmp = top_tok;
+      // TODO: reset_gc_state() よりも賢い方法を考える
+      //       一度の GC で必要なメモリを確保できず再度 GC が走ると予期せぬ挙動となる
+      //       この関数を呼ぶまで再度の GC を許容しないようにしているが、より良い方法を考えたい
+      reset_gc_state();
       Object *ast = parse_obj(&top_tok);
       if (ast != NULL) {
         if (debug_flag) {
@@ -114,9 +120,6 @@ int repl(void) {
           print_code(code, 0);
           putchar('\n');
         }
-        // TODO: reset_gc_state() よりも賢い方法を考える
-        //       一度の GC で必要なメモリを確保できず再度 GC が走ると予期せぬ挙動となる
-        //       この関数を呼ぶまで再度の GC を許容しないようにしているが、より良い方法を考えたい
         reset_gc_state();
         if (code != NULL) {
           VMPtr vm = new_vm(code);
@@ -125,7 +128,6 @@ int repl(void) {
           print_obj(result_obj);
           putchar('\n');
           free_vm(vm);
-          // reset_gc_state();
         }
         // free_obj(obj);
       }

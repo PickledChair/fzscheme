@@ -28,6 +28,14 @@ static Inst *inst_ldg(Object *symbol) {
   return inst;
 }
 
+static Inst *inst_args(size_t args_num) {
+  Inst *inst = new_inst(INST_ARGS);
+  inst->args_of.args.args_num = args_num;
+  return inst;
+}
+
+static Inst *inst_app(void) { return new_inst(INST_APP); }
+
 void free_code(Inst *code) {
   Inst *next;
   for (Inst *cur = code; cur != NULL; cur = next) {
@@ -57,12 +65,35 @@ void print_code(Inst *code, int level) {
       print_obj(cur->args_of.ldg.symbol);
       putchar('\n');
       break;
+    case INST_ARGS:
+      printf("args %zu\n", cur->args_of.args.args_num);
+      break;
+    case INST_APP:
+      printf("app\n");
+      break;
     case INST_STOP:
       printf("stop\n");
       break;
     }
   }
 }
+
+static size_t get_args_len(Object *obj) {
+  size_t len = 0;
+  Object *cur = obj;
+  while (cur != NIL) {
+    len++;
+    if (CDR(cur)->tag != OBJ_CELL) {
+      len++;
+      break;
+    }
+    cur = CDR(cur);
+  }
+  // 先頭の要素の分を引く
+  return len - 1;
+}
+
+static Inst *compile_list(Object *list, Inst *code);
 
 static Inst *compile_expr(Object *obj, Inst *code) {
   switch (obj->tag) {
@@ -105,12 +136,36 @@ static Inst *compile_expr(Object *obj, Inst *code) {
           return compile_expr(third, def_code);
         }
       }
+
+      Inst *args_code = inst_args(get_args_len(obj));
+      Inst *app_code = inst_app();
+      app_code->next = code;
+      args_code->next = compile_expr(CAR(obj), app_code);
+
+      return compile_list(CDR(obj), args_code);
+    } else {
+      printf("compile error: attempt to evaluate nil\n");
+      free_code(code);
+      return NULL;
     }
-    // break;
   default:
     printf("compile error: not yet implemented instructions\n");
     free_code(code);
     return NULL;
+  }
+}
+
+static Inst *compile_list(Object *list, Inst *code) {
+  if (list == NIL) {
+    return code;
+  } else {
+    if (list->tag == OBJ_CELL) {
+      Inst *compiled_list = compile_list(CDR(list), code);
+      return compile_expr(CAR(list), compiled_list);
+    } else {
+      // for pair
+      return compile_expr(list, code);
+    }
   }
 }
 

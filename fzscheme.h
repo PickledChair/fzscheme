@@ -36,16 +36,19 @@ uint32_t str_hash(char *str);
 //
 
 typedef enum ObjectTag {
+  OBJ_UNDEF,
   OBJ_BOOLEAN,
   OBJ_CELL,
   OBJ_ERROR,
   OBJ_INTEGER,
+  OBJ_PRIMITIVE,
   OBJ_STRING,
   OBJ_SYMBOL,
   OBJ_MOVED,
 } ObjectTag;
 
 typedef struct Object Object;
+typedef Object *(*PrimFunc)(Object *obj);
 struct Object {
   ObjectTag tag;
   union {
@@ -65,6 +68,11 @@ struct Object {
     struct {
       long value;
     } integer;
+
+    struct {
+      Object *symbol;
+      PrimFunc fn;
+    } primitive;
 
     struct {
       StringNode *str_node;
@@ -98,6 +106,7 @@ void free_symbol_obj(Object *obj);
 void print_obj(Object *obj);
 // Object *process_moved_obj(Object *obj);
 
+extern Object *UNDEF;
 extern Object *NIL;
 extern Object *TRUE;
 extern Object *FALSE;
@@ -110,6 +119,7 @@ Object *intern_name(char *name);
 Object *insert_to_global_env(Object *symbol, Object *value);
 Object *get_from_global_env(Object *symbol);
 void global_env_collect_roots(void);
+void init_symbol_table(void);
 void clear_symbol_table(void);
 
 //
@@ -180,6 +190,8 @@ typedef enum {
   INST_DEF,
   INST_LDC,
   INST_LDG,
+  INST_ARGS,
+  INST_APP,
   INST_STOP,
 } InstTag;
 
@@ -200,6 +212,10 @@ struct Inst {
     struct {
       Object *symbol;
     } ldg;
+
+    struct {
+      size_t args_num;
+    } args;
   } args_of;
 };
 
@@ -218,6 +234,14 @@ VMPtr new_vm(Inst *code);
 Object *vm_run(VMPtr vm);
 void vm_collect_roots(VMPtr vm);
 void free_vm(VMPtr vm);
+
+//
+// primitive.c
+//
+
+extern Object *prim_car_obj;
+extern Object *prim_display_obj;
+extern Object *prim_newline_obj;
 
 //
 // repl.c
