@@ -1,4 +1,3 @@
-#include <stdlib.h>
 #include "fzscheme.h"
 
 Object *parse_objs(Token **tok) {

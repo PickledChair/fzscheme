@@ -1,6 +1,4 @@
 #include "fzscheme.h"
-#include <stdio.h>
-#include <stdlib.h>
 
 static Inst *new_inst(InstTag tag) {
   Inst *inst = calloc(1, sizeof(Inst));

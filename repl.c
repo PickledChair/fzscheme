@@ -1,7 +1,4 @@
 #include "fzscheme.h"
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
 
 static int get_paren_level(int init_level, Token *start_tok, Token **end_tok_dest) {
   if (init_level < 0) return init_level;

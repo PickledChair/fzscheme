@@ -1,6 +1,4 @@
 #include "fzscheme.h"
-#include <stdio.h>
-#include <stdlib.h>
 
 Object *UNDEF = &(Object){OBJ_UNDEF};
 Object *NIL = &(Object){OBJ_CELL};

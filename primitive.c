@@ -1,4 +1,3 @@
-#include <stdio.h>
 #include "fzscheme.h"
 
 // リストの長さを返す。渡されたオブジェクトがペアだったら -1 を返す

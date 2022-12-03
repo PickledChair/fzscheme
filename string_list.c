@@ -1,6 +1,4 @@
 #include "fzscheme.h"
-#include <stdio.h>
-#include <stdlib.h>
 
 DEFINE_DOUBLY_LINKED_LIST_FUNCS(StringNode, char, true)
 static StringNode *marked_string_list_head = &(StringNode){};

@@ -1,6 +1,4 @@
 #include "fzscheme.h"
-#include <stdint.h>
-#include <string.h>
 
 #define FNV_OFFSET_BASIS_32 2166136261U
 #define FNV_PRIME_32 16777619U

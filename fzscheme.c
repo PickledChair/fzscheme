@@ -1,7 +1,4 @@
 #include "fzscheme.h"
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
 
 bool debug_flag = false;
 static size_t semispace_size = 0;

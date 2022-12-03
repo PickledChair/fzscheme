@@ -1,7 +1,4 @@
 #include "fzscheme.h"
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
 
 #define INITIAL_EXTENT_SIZE (sizeof(Object) * 100000)
 

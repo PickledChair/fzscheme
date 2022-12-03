@@ -1,11 +1,13 @@
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
+#include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 
-extern bool debug_flag;
-
 #include "doubly_linked_list.h"
+
+extern bool debug_flag;
 
 //
 // string_list.c

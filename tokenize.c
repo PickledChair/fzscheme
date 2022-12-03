@@ -1,8 +1,6 @@
-#include "fzscheme.h"
 #include <ctype.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
+
+#include "fzscheme.h"
 
 static Token *new_token(TokenTag tag, char *start, char *end) {
   Token *tok = calloc(1, sizeof(Token));

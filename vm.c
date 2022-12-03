@@ -1,6 +1,4 @@
 #include "fzscheme.h"
-#include <stdio.h>
-#include <stdlib.h>
 
 typedef struct StackNode StackNode;
 struct StackNode {

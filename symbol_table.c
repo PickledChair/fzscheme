@@ -1,8 +1,4 @@
 #include "fzscheme.h"
-#include <stdint.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
 
 #define SYMBOL_TABLE_SIZE (1024 + 9)
 
