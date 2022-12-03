@@ -136,6 +136,8 @@ void global_env_collect_roots(void) {
 
 void init_symbol_table(void) {
   REGISTER_PRIMITIVE(car);
+  REGISTER_PRIMITIVE(cdr);
+  REGISTER_PRIMITIVE(cons);
   REGISTER_PRIMITIVE(display);
   REGISTER_PRIMITIVE(newline);
 }

@@ -112,8 +112,15 @@ void print_obj(Object *obj) {
       putchar('(');
       for (Object *cur = obj; cur != NIL; cur = CDR(cur)) {
         print_obj(CAR(cur));
-        if (CDR(cur) != NIL)
-          putchar(' ');
+        if (CDR(cur) != NIL) {
+          if (CDR(cur)->tag == OBJ_CELL) {
+            putchar(' ');
+          } else {
+            printf(" . ");
+            print_obj(CDR(cur));
+            break;
+          }
+        }
       }
       putchar(')');
     }

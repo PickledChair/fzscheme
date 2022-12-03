@@ -240,6 +240,8 @@ void free_vm(VMPtr vm);
 //
 
 extern Object *prim_car_obj;
+extern Object *prim_cdr_obj;
+extern Object *prim_cons_obj;
 extern Object *prim_display_obj;
 extern Object *prim_newline_obj;
 

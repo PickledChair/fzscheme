@@ -118,7 +118,7 @@ Object *vm_run(VMPtr vm) {
       RootNode *args_list_node = NODE_TYPE_NEW_FUNC_NAME(RootNode)(&args_list);
       size_t args_num = vm->c->args_of.args.args_num;
       while (args_num--) {
-        args_list = new_cell_obj(s_pop(&vm->s), NIL);
+        args_list = new_cell_obj(s_pop(&vm->s), args_list);
         if (roots_is_empty()) {
           args_list_node = NODE_TYPE_NEW_FUNC_NAME(RootNode)(&args_list);
         }
