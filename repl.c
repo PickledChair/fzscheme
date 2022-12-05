@@ -125,6 +125,7 @@ int repl(void) {
           print_obj(result_obj);
           putchar('\n');
           free_vm(vm);
+          free_code(code);
         }
         // free_obj(obj);
       }

@@ -35,9 +35,62 @@ static void free_s(StackNode *s) {
   }
 }
 
+typedef struct DumpNode DumpNode;
+struct DumpNode {
+  StackNode *stack;
+  Inst *code;
+  DumpNode *next;
+};
+
+static DumpNode *new_dump_node(StackNode *stack, Inst *code) {
+  DumpNode *dump = calloc(1, sizeof(DumpNode));
+  dump->stack = stack;
+  dump->code = code;
+  return dump;
+}
+
+static void d_push(DumpNode **d, StackNode *stack, Inst *code) {
+  DumpNode *node = new_dump_node(stack, code);
+  node->next = *d;
+  *d = node;
+}
+
+static int d_pop(DumpNode **d, StackNode **stack, Inst **code) {
+  if (*d == NULL) {
+    *stack = NULL;
+    *code = NULL;
+    return -1;
+  }
+  if (stack) {
+    *stack = (*d)->stack;
+  }
+  if (code) {
+    *code = (*d)->code;
+  }
+  DumpNode *next = (*d)->next;
+  free(*d);
+  *d = next;
+  return 0;
+}
+
+static void free_d(DumpNode *d) {
+  DumpNode *next;
+  for (DumpNode *cur = d; cur != NULL; cur = cur->next) {
+    next = cur->next;
+    if (cur->stack) {
+      free_s(cur->stack);
+    }
+    // if (cur->code) {
+    //   free_code(cur->code);
+    // }
+    free(cur);
+  }
+}
+
 struct VM {
   StackNode *s;
   Inst *c;
+  DumpNode *d;
 } VM;
 
 VMPtr current_working_vm = NULL;
@@ -111,6 +164,23 @@ Object *vm_run(VMPtr vm) {
       }
       break;
     }
+    case INST_SEL: {
+      d_push(&vm->d, NULL, vm->c->next);
+      Object *cond_obj = s_pop(&vm->s);
+      if (cond_obj->tag != OBJ_BOOLEAN
+          || (cond_obj->tag == OBJ_BOOLEAN && cond_obj == TRUE)) {
+        vm->c = vm->c->args_of.sel.t_clause;
+      } else {
+        vm->c = vm->c->args_of.sel.f_clause;
+      }
+      continue;
+    }
+    case INST_JOIN: {
+      Inst *inst_node;
+      d_pop(&vm->d, NULL, &inst_node);
+      vm->c = inst_node;
+      continue;
+    }
     case INST_ARGS: {
       Object *args_list = NIL;
       RootNode *args_list_node = NODE_TYPE_NEW_FUNC_NAME(RootNode)(&args_list);
@@ -131,9 +201,7 @@ Object *vm_run(VMPtr vm) {
       return s_pop(&vm->s);
     }
 
-    Inst *next_inst = vm->c->next;
-    free(vm->c);
-    vm->c = next_inst;
+    vm->c = vm->c->next;
   }
 }
 
@@ -142,12 +210,13 @@ void vm_collect_roots(VMPtr vm) {
     NODE_TYPE_NEW_FUNC_NAME(RootNode)(&cur->item);
   }
 
-  inst_collect_roots(vm->c);
+  code_collect_roots(vm->c);
 }
 
 void free_vm(VMPtr vm) {
   free_s(vm->s);
-  free_code(vm->c);
+  // free_code(vm->c);
+  free_d(vm->d);
   free(vm);
 }
 

@@ -90,13 +90,7 @@ void print_obj(Object *obj) {
     printf("#<undef>");
     break;
   case OBJ_BOOLEAN: {
-    char *bool_literal;
-    if (obj->fields_of.boolean.value) {
-      bool_literal = "#t";
-    } else {
-      bool_literal = "#f";
-    }
-    printf("%s", bool_literal);
+    printf("%s", obj->fields_of.boolean.value ? "#t" : "#f");
     break;
   }
   case OBJ_CELL:

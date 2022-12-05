@@ -32,21 +32,36 @@ static Inst *inst_args(size_t args_num) {
   return inst;
 }
 
+static Inst *inst_sel(Inst *t_clause, Inst *f_clause) {
+  Inst *inst = new_inst(INST_SEL);
+  inst->args_of.sel.t_clause = t_clause;
+  inst->args_of.sel.f_clause = f_clause;
+  return inst;
+}
+
+static Inst *inst_join(void) { return new_inst(INST_JOIN); }
+
 static Inst *inst_app(void) { return new_inst(INST_APP); }
 
 void free_code(Inst *code) {
   Inst *next;
   for (Inst *cur = code; cur != NULL; cur = next) {
+    if (cur->tag == INST_SEL) {
+      free_code(cur->args_of.sel.t_clause);
+      if (cur->args_of.sel.f_clause) {
+        free_code(cur->args_of.sel.f_clause);
+      }
+    }
     next = cur->next;
     free(cur);
   }
 }
 
 void print_code(Inst *code, int level) {
-  for (int i = 0; i < level; i++) {
-    putchar(' ');
-  }
   for (Inst *cur = code; cur != NULL; cur = cur->next) {
+    for (int i = 0; i < level; i++) {
+      putchar(' ');
+    }
     switch (cur->tag) {
     case INST_DEF:
       printf("def ");
@@ -69,6 +84,22 @@ void print_code(Inst *code, int level) {
     case INST_APP:
       printf("app\n");
       break;
+    case INST_SEL:
+      printf("sel\n");
+      for (int i = 0; i < level; i++) {
+        putchar(' ');
+      }
+      printf("then clause:\n");
+      print_code(cur->args_of.sel.t_clause, level + 1);
+      for (int i = 0; i < level; i++) {
+        putchar(' ');
+      }
+      printf("else clause:\n");
+      print_code(cur->args_of.sel.f_clause, level + 1);
+      break;
+    case INST_JOIN:
+      printf("join\n");
+      break;
     case INST_STOP:
       printf("stop\n");
       break;
@@ -76,8 +107,8 @@ void print_code(Inst *code, int level) {
   }
 }
 
-void inst_collect_roots(Inst *inst) {
-  for (Inst *cur = inst; cur->tag != INST_STOP; cur = cur->next) {
+void code_collect_roots(Inst *code) {
+  for (Inst *cur = code; cur->tag != INST_STOP; cur = cur->next) {
     switch (cur->tag) {
     case INST_LDC:
       NODE_TYPE_NEW_FUNC_NAME(RootNode)(&cur->args_of.ldc.constant);
@@ -128,6 +159,30 @@ static Inst *compile_expr(Object *obj, Inst *code) {
           return ldc_code;
         } else {
           printf("compile error: shortage of the args of `quote`\n");
+          free_code(code);
+          return NULL;
+        }
+      }
+
+      if (CAR(obj) == intern_name("if")) {
+        if (CDR(obj) != NIL && CDR(CDR(obj)) != NIL) {
+          Object *second = CAR(CDR(obj));
+          Object *third = CAR(CDR(CDR(obj)));
+          Object *forth = CDR(CDR(CDR(obj))) == NIL ? NULL : CAR(CDR(CDR(CDR(obj))));
+
+          Inst *t_clause = compile_expr(third, inst_join());
+          Inst *f_clause = NULL;
+          if (forth) {
+            f_clause = compile_expr(forth, inst_join());
+          } else {
+            f_clause = inst_ldc(UNDEF);
+            f_clause->next = inst_join();
+          }
+          Inst *sel_code = inst_sel(t_clause, f_clause);
+          sel_code->next = code;
+          return compile_expr(second, sel_code);
+        } else {
+          printf("compile error: shortage of the args of `if`\n");
           free_code(code);
           return NULL;
         }

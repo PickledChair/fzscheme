@@ -194,6 +194,8 @@ typedef enum {
   INST_LDG,
   INST_ARGS,
   INST_APP,
+  INST_SEL,
+  INST_JOIN,
   INST_STOP,
 } InstTag;
 
@@ -218,12 +220,17 @@ struct Inst {
     struct {
       size_t args_num;
     } args;
+
+    struct {
+      Inst *t_clause;
+      Inst *f_clause;
+    } sel;
   } args_of;
 };
 
 void free_code(Inst *code);
 void print_code(Inst *code, int level);
-void inst_collect_roots(Inst *inst);
+void code_collect_roots(Inst *code);
 Inst *compile(Object *ast);
 
 //
