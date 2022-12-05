@@ -10,13 +10,13 @@ static Token *new_token(TokenTag tag, char *start, char *end) {
   return tok;
 }
 
-static bool is_extended_identifier_char(char ch) {
+static bool is_special_initial_char(char ch) {
   // NOTE: strchr 関数の検索対象文字列は末尾に必ずヌル文字を含んでいるので除外する必要がある
-  if (ch != '\0' && strchr("!$%&*+-./:<=>?@^_~", ch) != NULL) {
-    return true;
-  } else {
-    return false;
-  }
+  return (ch != '\0' && strchr("!$%&*/:<=>?^_~", ch) != NULL);
+}
+
+static bool is_special_subsequent_char(char ch) {
+  return (ch != '\0' && strchr("+-.@", ch) != NULL);
 }
 
 static int read_escaped_char(char **new_pos, char *p) {
@@ -125,6 +125,13 @@ Token *tokenize(char *input) {
       continue;
     }
 
+    // ドット
+    if (*input == '.') {
+      cur = cur->next = new_token(TK_DOT, input, input+1);
+      input++;
+      continue;
+    }
+
     if (*input == '#') {
       char *start = input;
       input++;
@@ -143,9 +150,10 @@ Token *tokenize(char *input) {
     }
 
     // 識別子
-    if (isalpha(*input) || is_extended_identifier_char(*input)) {
+    if (isalpha(*input) || is_special_initial_char(*input)
+        || *input == '+' || *input == '-') {
       char *start = input;
-      while (isalnum(*input) || is_extended_identifier_char(*input)) {
+      while (isalnum(*input) || is_special_subsequent_char(*input)) {
         input++;
       }
       char *end = input;
@@ -168,6 +176,9 @@ Token *tokenize(char *input) {
 
 void print_token(Token *tok) {
   switch (tok->tag) {
+  case TK_DOT:
+    printf("DOT\t.\n");
+    break;
   case TK_FALSE:
     printf("FALSE\t#f\n");
     break;

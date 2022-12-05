@@ -153,6 +153,7 @@ void DOUBLY_LINKED_LIST_CLEAR_FUNC_NAME(RootNode)(void);
 //
 
 typedef enum {
+  TK_DOT,
   TK_FALSE,
   TK_IDENT,
   TK_INT,
