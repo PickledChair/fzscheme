@@ -76,6 +76,18 @@ void print_code(Inst *code, int level) {
   }
 }
 
+void inst_collect_roots(Inst *inst) {
+  for (Inst *cur = inst; cur->tag != INST_STOP; cur = cur->next) {
+    switch (cur->tag) {
+    case INST_LDC:
+      NODE_TYPE_NEW_FUNC_NAME(RootNode)(&cur->args_of.ldc.constant);
+      break;
+    default:
+      break;
+    }
+  }
+}
+
 static size_t get_args_len(Object *obj) {
   size_t len = 0;
   Object *cur = obj;

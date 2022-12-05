@@ -223,6 +223,7 @@ struct Inst {
 
 void free_code(Inst *code);
 void print_code(Inst *code, int level);
+void inst_collect_roots(Inst *inst);
 Inst *compile(Object *ast);
 
 //

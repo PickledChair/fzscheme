@@ -40,7 +40,8 @@ static void flip(void) {
 }
 
 static bool obj_is_in_gc_heap(Object *obj) {
-  return (obj != NULL && obj->tag != OBJ_BOOLEAN && obj->tag != OBJ_SYMBOL && obj != NIL);
+  return (obj != NULL && obj->tag != OBJ_BOOLEAN && obj->tag != OBJ_SYMBOL && obj != NIL
+          && obj->tag != OBJ_PRIMITIVE);
 }
 
 static void forward_roots(void) {
@@ -67,6 +68,8 @@ static void forward_roots(void) {
 
         *cur_root->value = free_ptr;
         free_ptr += obj_size;
+      } else {
+        *cur_root->value = (*cur_root->value)->fields_of.moved.address;
       }
     }
     cur_root = cur_root->next;
