@@ -48,9 +48,7 @@ void free_code(Inst *code) {
   for (Inst *cur = code; cur != NULL; cur = next) {
     if (cur->tag == INST_SEL) {
       free_code(cur->args_of.sel.t_clause);
-      if (cur->args_of.sel.f_clause) {
-        free_code(cur->args_of.sel.f_clause);
-      }
+      free_code(cur->args_of.sel.f_clause);
     }
     next = cur->next;
     free(cur);
