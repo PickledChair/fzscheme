@@ -142,6 +142,7 @@ Object *vm_run(VMPtr vm) {
           DOUBLY_LINKED_LIST_REMOVE_FUNC_NAME(RootNode)(proc_obj_node);
           free(proc_obj_node);
         }
+        current_working_vm = NULL;
         return error;
       }
 
@@ -158,6 +159,7 @@ Object *vm_run(VMPtr vm) {
       }
 
       if (ret_obj->tag == OBJ_ERROR) {
+        current_working_vm = NULL;
         return ret_obj;
       } else {
         s_push(&vm->s, ret_obj);
