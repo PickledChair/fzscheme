@@ -153,7 +153,8 @@ Token *tokenize(char *input) {
     if (isalpha(*input) || is_special_initial_char(*input)
         || *input == '+' || *input == '-') {
       char *start = input;
-      while (isalnum(*input) || is_special_subsequent_char(*input)) {
+      while (isalnum(*input) || is_special_initial_char(*input)
+             || is_special_subsequent_char(*input)) {
         input++;
       }
       char *end = input;
