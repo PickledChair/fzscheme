@@ -111,6 +111,10 @@ void code_collect_roots(Inst *code) {
     case INST_LDC:
       NODE_TYPE_NEW_FUNC_NAME(RootNode)(&cur->args_of.ldc.constant);
       break;
+    case INST_SEL:
+      code_collect_roots(cur->args_of.sel.t_clause);
+      code_collect_roots(cur->args_of.sel.f_clause);
+      break;
     default:
       break;
     }
