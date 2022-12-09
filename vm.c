@@ -35,6 +35,12 @@ static void free_s(StackNode *s) {
   }
 }
 
+static void stack_collect_roots(StackNode *node) {
+  for (StackNode *cur = node; cur != NULL; cur = cur->next) {
+    NODE_TYPE_NEW_FUNC_NAME(RootNode)(&cur->item);
+  }
+}
+
 typedef struct DumpNode DumpNode;
 struct DumpNode {
   StackNode *stack;
@@ -84,6 +90,17 @@ static void free_d(DumpNode *d) {
     //   free_code(cur->code);
     // }
     free(cur);
+  }
+}
+
+static void dump_collect_roots(DumpNode *node) {
+  for (DumpNode *cur = node; cur != NULL; cur = cur->next) {
+    if (cur->stack) {
+      stack_collect_roots(cur->stack);
+    }
+    if (cur->code) {
+      code_collect_roots(cur->code);
+    }
   }
 }
 
@@ -208,11 +225,10 @@ Object *vm_run(VMPtr vm) {
 }
 
 void vm_collect_roots(VMPtr vm) {
-  for (StackNode *cur = vm->s; cur != NULL; cur = cur->next) {
-    NODE_TYPE_NEW_FUNC_NAME(RootNode)(&cur->item);
-  }
+  stack_collect_roots(vm->s);
 
   code_collect_roots(vm->c);
+  dump_collect_roots(vm->d);
 }
 
 void free_vm(VMPtr vm) {

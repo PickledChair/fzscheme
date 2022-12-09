@@ -106,7 +106,7 @@ void print_code(Inst *code, int level) {
 }
 
 void code_collect_roots(Inst *code) {
-  for (Inst *cur = code; cur->tag != INST_STOP; cur = cur->next) {
+  for (Inst *cur = code; cur != NULL; cur = cur->next) {
     switch (cur->tag) {
     case INST_LDC:
       NODE_TYPE_NEW_FUNC_NAME(RootNode)(&cur->args_of.ldc.constant);
