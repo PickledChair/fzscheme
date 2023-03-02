@@ -126,16 +126,19 @@ void global_env_collect_roots(void) {
   }
 }
 
-#define REGISTER_PRIMITIVE(PRIM_NAME) \
-  prim_##PRIM_NAME##_obj->fields_of.primitive.symbol = intern_name(#PRIM_NAME); \
-  insert_to_global_env(intern_name(#PRIM_NAME), prim_##PRIM_NAME##_obj)
+#define REGISTER_PRIMITIVE(SYMBOL_NAME, PRIM_NAME) \
+  prim_##PRIM_NAME##_obj->fields_of.primitive.symbol = intern_name(SYMBOL_NAME); \
+  insert_to_global_env(intern_name(SYMBOL_NAME), prim_##PRIM_NAME##_obj)
 
 void init_symbol_table(void) {
-  REGISTER_PRIMITIVE(car);
-  REGISTER_PRIMITIVE(cdr);
-  REGISTER_PRIMITIVE(cons);
-  REGISTER_PRIMITIVE(display);
-  REGISTER_PRIMITIVE(newline);
+  REGISTER_PRIMITIVE("car", car);
+  REGISTER_PRIMITIVE("cdr", cdr);
+  REGISTER_PRIMITIVE("cons", cons);
+  REGISTER_PRIMITIVE("display", display);
+  REGISTER_PRIMITIVE("newline", newline);
+  REGISTER_PRIMITIVE("eq?", eq);
+  REGISTER_PRIMITIVE("eqv?", eqv);
+  REGISTER_PRIMITIVE("equal?", equal);
 }
 
 void clear_symbol_table(void) {

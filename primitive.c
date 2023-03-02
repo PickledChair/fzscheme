@@ -62,3 +62,57 @@ static Object *prim_newline(Object *obj) {
   return UNDEF;
 }
 DEFINE_PRIM_OBJ(prim_newline)
+
+static Object *prim_eq(Object *obj) {
+  if (get_list_length(obj) != 2) {
+    return new_error_obj("eq?: wrong number of arguments, eq? requires 2");
+  }
+  Object *fst = CAR(obj), *snd = CAR(CDR(obj));
+  return (fst == snd) ? TRUE : FALSE;
+}
+DEFINE_PRIM_OBJ(prim_eq)
+
+static bool eqv(Object *fst, Object *snd) {
+  if (fst->tag == OBJ_INTEGER && snd->tag == OBJ_INTEGER) {
+    return fst->fields_of.integer.value == snd->fields_of.integer.value;
+  }
+  return fst == snd;
+}
+
+static Object *prim_eqv(Object *obj) {
+  if (get_list_length(obj) != 2) {
+    return new_error_obj("eqv?: wrong number of arguments, eqv? requires 2");
+  }
+  Object *fst = CAR(obj), *snd = CAR(CDR(obj));
+  return eqv(fst, snd) ? TRUE : FALSE;
+}
+DEFINE_PRIM_OBJ(prim_eqv)
+
+static bool equal(Object *fst, Object *snd) {
+  if (eqv(fst, snd)) return true;
+
+  if (fst->tag == OBJ_CELL && snd->tag == OBJ_CELL) {
+    if (get_list_length(fst) != get_list_length(snd)) return false;
+
+    for (Object *l = fst, *r = snd; l != NIL; l = CDR(l), r = CDR(r)) {
+      if (!equal(CAR(l), CAR(r))) return false;
+    }
+    return true;
+  }
+
+  if (fst->tag == OBJ_STRING && snd->tag == OBJ_STRING) {
+    return strcmp(fst->fields_of.string.str_node->value,
+                  snd->fields_of.string.str_node->value) == 0;
+  }
+
+  return false;
+}
+
+static Object *prim_equal(Object *obj) {
+  if (get_list_length(obj) != 2) {
+    return new_error_obj("equal?: wrong number of arguments, equal? requires 2");
+  }
+  Object *fst = CAR(obj), *snd = CAR(CDR(obj));
+  return equal(fst, snd) ? TRUE : FALSE;
+}
+DEFINE_PRIM_OBJ(prim_equal)

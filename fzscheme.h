@@ -255,6 +255,9 @@ extern Object *prim_cdr_obj;
 extern Object *prim_cons_obj;
 extern Object *prim_display_obj;
 extern Object *prim_newline_obj;
+extern Object *prim_eq_obj;
+extern Object *prim_eqv_obj;
+extern Object *prim_equal_obj;
 
 //
 // repl.c
