@@ -124,8 +124,7 @@ int repl(void) {
           printf("==> ");
           print_obj(result_obj);
           putchar('\n');
-          free_vm(vm);
-          free_code(code);
+          free_vm(vm, true);
         }
         // free_obj(obj);
       }

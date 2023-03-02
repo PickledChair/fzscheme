@@ -86,9 +86,6 @@ static void free_d(DumpNode *d) {
     if (cur->stack) {
       free_s(cur->stack);
     }
-    // if (cur->code) {
-    //   free_code(cur->code);
-    // }
     free(cur);
   }
 }
@@ -108,13 +105,14 @@ struct VM {
   StackNode *s;
   Inst *c;
   DumpNode *d;
+  Inst *code_top;
 } VM;
 
 VMPtr current_working_vm = NULL;
 
 VMPtr new_vm(Inst *code) {
   VMPtr vm = calloc(1, sizeof(VM));
-  vm->c = code;
+  vm->c = vm->code_top = code;
   return vm;
 }
 
@@ -231,9 +229,9 @@ void vm_collect_roots(VMPtr vm) {
   dump_collect_roots(vm->d);
 }
 
-void free_vm(VMPtr vm) {
+void free_vm(VMPtr vm, bool also_free_code) {
   free_s(vm->s);
-  // free_code(vm->c);
+  if (also_free_code) free_code(vm->c);
   free_d(vm->d);
   free(vm);
 }

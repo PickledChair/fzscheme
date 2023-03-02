@@ -244,7 +244,7 @@ extern VMPtr current_working_vm;
 VMPtr new_vm(Inst *code);
 Object *vm_run(VMPtr vm);
 void vm_collect_roots(VMPtr vm);
-void free_vm(VMPtr vm);
+void free_vm(VMPtr vm, bool also_free_code);
 
 //
 // primitive.c
