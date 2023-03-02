@@ -1,30 +1,37 @@
 #include "fzscheme.h"
 
+DEFINE_DOUBLY_LINKED_LIST_FUNCS(ParserRootNode, Object *, false)
+
+ParserRootNode *get_parser_roots(void) {
+  return DOUBLY_LINKED_LIST_HEAD_NAME(ParserRootNode)->next;
+}
+
+bool parser_roots_is_empty(void) {
+  return DOUBLY_LINKED_LIST_HEAD_NAME(ParserRootNode)->next == NULL;
+}
+
 static Object *RPAREN_FOUND = &(Object){OBJ_UNDEF};
 
 Object *parse_objs(Token **tok) {
   Object *head = parse_obj(tok);
-  RootNode *head_node = NODE_TYPE_NEW_FUNC_NAME(RootNode)(&head);
+  ParserRootNode *head_node = NODE_TYPE_NEW_FUNC_NAME(ParserRootNode)(&head);
   if (head == NULL) {
     // error
-    DOUBLY_LINKED_LIST_REMOVE_FUNC_NAME(RootNode)(head_node);
+    DOUBLY_LINKED_LIST_REMOVE_FUNC_NAME(ParserRootNode)(head_node);
     free(head_node);
     return NULL;
   } else if (head == RPAREN_FOUND) {
-    DOUBLY_LINKED_LIST_REMOVE_FUNC_NAME(RootNode)(head_node);
+    DOUBLY_LINKED_LIST_REMOVE_FUNC_NAME(ParserRootNode)(head_node);
     free(head_node);
     return NIL;
   } else {
     head = new_cell_obj(head, NIL);
-    if (roots_is_empty()) {
-      head_node = NODE_TYPE_NEW_FUNC_NAME(RootNode)(&head);
-    }
   }
 
   Object *cur = head;
-  RootNode *cur_node = NODE_TYPE_NEW_FUNC_NAME(RootNode)(&cur);
+  ParserRootNode *cur_node = NODE_TYPE_NEW_FUNC_NAME(ParserRootNode)(&cur);
   Object *obj = NULL;
-  RootNode *obj_node = NODE_TYPE_NEW_FUNC_NAME(RootNode)(&obj);
+  ParserRootNode *obj_node = NODE_TYPE_NEW_FUNC_NAME(ParserRootNode)(&obj);
   int dot_pos = 0;
   for (;;) {
     if ((*tok)->tag == TK_DOT) {
@@ -34,17 +41,12 @@ Object *parse_objs(Token **tok) {
       dot_pos--;
     }
     obj = parse_obj(tok);
-    if (roots_is_empty()) {
-      head_node = NODE_TYPE_NEW_FUNC_NAME(RootNode)(&head);
-      cur_node = NODE_TYPE_NEW_FUNC_NAME(RootNode)(&cur);
-      obj_node = NODE_TYPE_NEW_FUNC_NAME(RootNode)(&obj);
-    }
     if (obj == NULL || obj == RPAREN_FOUND) {
-      DOUBLY_LINKED_LIST_REMOVE_FUNC_NAME(RootNode)(obj_node);
+      DOUBLY_LINKED_LIST_REMOVE_FUNC_NAME(ParserRootNode)(obj_node);
       free(obj_node);
-      DOUBLY_LINKED_LIST_REMOVE_FUNC_NAME(RootNode)(cur_node);
+      DOUBLY_LINKED_LIST_REMOVE_FUNC_NAME(ParserRootNode)(cur_node);
       free(cur_node);
-      DOUBLY_LINKED_LIST_REMOVE_FUNC_NAME(RootNode)(head_node);
+      DOUBLY_LINKED_LIST_REMOVE_FUNC_NAME(ParserRootNode)(head_node);
       free(head_node);
       if (obj == NULL) {
         // error
@@ -67,11 +69,6 @@ Object *parse_objs(Token **tok) {
         return NULL;
       }
       Object *cdr_obj = new_cell_obj(obj, NIL);
-      if (roots_is_empty()) {
-        head_node = NODE_TYPE_NEW_FUNC_NAME(RootNode)(&head);
-        cur_node = NODE_TYPE_NEW_FUNC_NAME(RootNode)(&cur);
-        obj_node = NODE_TYPE_NEW_FUNC_NAME(RootNode)(&obj);
-      }
       CHECK_OBJ_MOVING(head);
       CHECK_OBJ_MOVING(cur);
       cur = CDR(cur) = cdr_obj;

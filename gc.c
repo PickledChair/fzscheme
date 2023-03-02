@@ -44,6 +44,38 @@ static bool obj_is_in_gc_heap(Object *obj) {
           && obj->tag != OBJ_PRIMITIVE);
 }
 
+static void forward_parser_roots(void) {
+  ParserRootNode *cur_root = get_parser_roots();
+
+  while (cur_root != NULL) {
+    if (obj_is_in_gc_heap(*cur_root->value)) {
+      size_t obj_size = sizeof(**cur_root->value);
+      if (debug_flag) {
+        print_obj(*cur_root->value);
+        printf(" object size: 0x%zx\n", obj_size);
+      }
+      if (free_ptr + obj_size > TOP_PTR) {
+        printf("memory error: shortage of memory\n");
+        exit(1);
+      }
+
+      if ((*cur_root->value)->tag != OBJ_MOVED) {
+        FORWARD(*cur_root->value);
+
+        if ((*cur_root->value)->tag == OBJ_STRING) {
+          mark_string_node((*cur_root->value)->fields_of.string.str_node);
+        }
+
+        *cur_root->value = free_ptr;
+        free_ptr += obj_size;
+      } else {
+        *cur_root->value = (*cur_root->value)->fields_of.moved.address;
+      }
+    }
+    cur_root = cur_root->next;
+  }
+}
+
 static void forward_roots(void) {
   RootNode *cur_root = get_roots();
 
@@ -151,6 +183,7 @@ void fzscm_gc(void) {
   }
 
   // root の forward 処理
+  forward_parser_roots();
   forward_roots();
 
   // root 以外の forward 処理

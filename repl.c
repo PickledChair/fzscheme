@@ -110,6 +110,9 @@ int repl(void) {
           print_obj(ast);
           printf("\n\n");
         }
+        if (!parser_roots_is_empty()) {
+          DOUBLY_LINKED_LIST_CLEAR_FUNC_NAME(ParserRootNode)();
+        }
 
         Inst *code = compile(ast);
         if (debug_flag && code != NULL) {

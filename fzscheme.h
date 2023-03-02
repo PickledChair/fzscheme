@@ -185,6 +185,12 @@ void free_token(Token *tok);
 Object *parse_obj(Token **tok);
 Object *parse_objs(Token **tok);
 
+DEFINE_NODE_TYPE(ParserRootNode, Object **)
+
+ParserRootNode *get_parser_roots(void);
+bool parser_roots_is_empty(void);
+void DOUBLY_LINKED_LIST_CLEAR_FUNC_NAME(ParserRootNode)(void);
+
 //
 // compiler.c
 //
