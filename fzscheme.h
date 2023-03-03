@@ -264,6 +264,11 @@ extern Object *prim_newline_obj;
 extern Object *prim_eq_obj;
 extern Object *prim_eqv_obj;
 extern Object *prim_equal_obj;
+extern Object *prim_plus_obj;
+extern Object *prim_times_obj;
+extern Object *prim_minus_obj;
+extern Object *prim_div_obj;
+extern Object *prim_modulo_obj;
 
 //
 // repl.c

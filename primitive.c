@@ -116,3 +116,76 @@ static Object *prim_equal(Object *obj) {
   return equal(fst, snd) ? TRUE : FALSE;
 }
 DEFINE_PRIM_OBJ(prim_equal)
+
+static Object *prim_plus(Object *obj) {
+  long result = 0;
+  Object *args = obj;
+  while (args != NIL) {
+    if (CAR(args)->tag != OBJ_INTEGER) {
+      return new_error_obj("cannot apply `+` for non-integer objects");
+    }
+    result += CAR(args)->fields_of.integer.value;
+    args = CDR(args);
+  }
+  return new_integer_obj(result);
+}
+DEFINE_PRIM_OBJ(prim_plus)
+
+static Object *prim_times(Object *obj) {
+  long result = 1;
+  Object *args = obj;
+  while (args != NIL) {
+    if (CAR(args)->tag != OBJ_INTEGER) {
+      return new_error_obj("cannot apply `*` for non-integer objects");
+    }
+    result *= CAR(args)->fields_of.integer.value;
+    args = CDR(args);
+  }
+  return new_integer_obj(result);
+}
+DEFINE_PRIM_OBJ(prim_times)
+
+static Object *prim_minus(Object *obj) {
+  switch (get_list_length(obj)) {
+    case 0: return new_error_obj("`-`: arguments is empty");
+    case 1:
+      if (CAR(obj)->tag != OBJ_INTEGER) return new_error_obj("cannot apply `-` for non-integer object");
+      return new_integer_obj(-CAR(obj)->fields_of.integer.value);
+    default: { // 引数がペアの時は今のところ考慮しない
+      if (CAR(obj)->tag != OBJ_INTEGER) return new_error_obj("cannot apply `-` for non-integer object");
+      long result = CAR(obj)->fields_of.integer.value;
+      Object *args = CDR(obj);
+      while (args != NIL) {
+        if (CAR(args)->tag != OBJ_INTEGER) return new_error_obj("cannot apply `-` for non-integer object");
+        result -= CAR(args)->fields_of.integer.value;
+        args = CDR(args);
+      }
+      return new_integer_obj(result);
+    }
+  }
+}
+DEFINE_PRIM_OBJ(prim_minus)
+
+static Object *prim_div(Object *obj) {
+  if (get_list_length(obj) != 2) return new_error_obj("div: wrong number of arguments, div requires 2");
+
+  Object *fst = CAR(obj), *snd = CAR(CDR(obj));
+  if (fst->tag != OBJ_INTEGER) return new_error_obj("div: first argument is not integer");
+  if (snd->tag != OBJ_INTEGER) return new_error_obj("div: second argument is not integer");
+  if (snd->fields_of.integer.value == 0) return new_error_obj("div: zero divisor is not allowed in integer division");
+
+  return new_integer_obj(fst->fields_of.integer.value / snd->fields_of.integer.value);
+}
+DEFINE_PRIM_OBJ(prim_div)
+
+static Object *prim_modulo(Object *obj) {
+  if (get_list_length(obj) != 2) return new_error_obj("modulo: wrong number of arguments, modulo requires 2");
+
+  Object *fst = CAR(obj), *snd = CAR(CDR(obj));
+  if (fst->tag != OBJ_INTEGER) return new_error_obj("modulo: first argument is not integer");
+  if (snd->tag != OBJ_INTEGER) return new_error_obj("modulo: second argument is not integer");
+  if (snd->fields_of.integer.value == 0) return new_error_obj("modulo: zero divisor is not allowed in integer division");
+
+  return new_integer_obj(fst->fields_of.integer.value % snd->fields_of.integer.value);
+}
+DEFINE_PRIM_OBJ(prim_modulo)

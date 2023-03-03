@@ -139,6 +139,11 @@ void init_symbol_table(void) {
   REGISTER_PRIMITIVE("eq?", eq);
   REGISTER_PRIMITIVE("eqv?", eqv);
   REGISTER_PRIMITIVE("equal?", equal);
+  REGISTER_PRIMITIVE("+", plus);
+  REGISTER_PRIMITIVE("*", times);
+  REGISTER_PRIMITIVE("-", minus);
+  REGISTER_PRIMITIVE("div", div);
+  REGISTER_PRIMITIVE("modulo", modulo);
 }
 
 void clear_symbol_table(void) {
