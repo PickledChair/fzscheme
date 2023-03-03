@@ -66,6 +66,12 @@
       if (SHOULD_FREE_VALUE && strcmp(#NODE_TYPE_NAME, "ObjectVectorNode") == 0) {  \
         free(cur->value);                                                           \
       }                                                                             \
+      if (SHOULD_FREE_VALUE && strcmp(#NODE_TYPE_NAME, "EnvNode") == 0) {           \
+        free(cur->value);                                                           \
+      }                                                                             \
+      if (SHOULD_FREE_VALUE && strcmp(#NODE_TYPE_NAME, "CodeNode") == 0) {          \
+        free_code((Inst *)cur->value);                                              \
+      }                                                                             \
       free(cur);                                                                    \
       cur = next;                                                                   \
     }                                                                               \

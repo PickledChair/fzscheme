@@ -44,31 +44,37 @@ static void stack_collect_roots(StackNode *node) {
 typedef struct DumpNode DumpNode;
 struct DumpNode {
   StackNode *stack;
+  Env *env;
   Inst *code;
   DumpNode *next;
 };
 
-static DumpNode *new_dump_node(StackNode *stack, Inst *code) {
+static DumpNode *new_dump_node(StackNode *stack, Env *env, Inst *code) {
   DumpNode *dump = calloc(1, sizeof(DumpNode));
   dump->stack = stack;
+  dump->env = env;
   dump->code = code;
   return dump;
 }
 
-static void d_push(DumpNode **d, StackNode *stack, Inst *code) {
-  DumpNode *node = new_dump_node(stack, code);
+static void d_push(DumpNode **d, StackNode *stack, Env *env, Inst *code) {
+  DumpNode *node = new_dump_node(stack, env, code);
   node->next = *d;
   *d = node;
 }
 
-static int d_pop(DumpNode **d, StackNode **stack, Inst **code) {
+static int d_pop(DumpNode **d, StackNode **stack, Env **env, Inst **code) {
   if (*d == NULL) {
     *stack = NULL;
+    *env = NULL;
     *code = NULL;
     return -1;
   }
   if (stack) {
     *stack = (*d)->stack;
+  }
+  if (env) {
+    *env = (*d)->env;
   }
   if (code) {
     *code = (*d)->code;
@@ -103,6 +109,7 @@ static void dump_collect_roots(DumpNode *node) {
 
 struct VM {
   StackNode *s;
+  Env *e;
   Inst *c;
   DumpNode *d;
   Inst *code_top;
@@ -112,13 +119,14 @@ VMPtr current_working_vm = NULL;
 
 VMPtr new_vm(Inst *code) {
   VMPtr vm = calloc(1, sizeof(VM));
+  vm->e = new_env();
   vm->c = vm->code_top = code;
   return vm;
 }
 
 #define ERROR_MESSAGE_LEN 512
 
-Object *apply(Object *prim, Object *args);
+Object *apply(Object *proc, Object *args);
 
 Object *vm_run(VMPtr vm) {
   current_working_vm = vm;
@@ -129,6 +137,12 @@ Object *vm_run(VMPtr vm) {
       Object *symbol = vm->c->args_of.def.symbol;
       insert_to_global_env(symbol, s_pop(&vm->s));
       s_push(&vm->s, symbol);
+      break;
+    }
+    case INST_LD: {
+      int i = vm->c->args_of.ld.i, j = vm->c->args_of.ld.j;
+      Object *lvar = get_lvar(vm->e, i, j);
+      s_push(&vm->s, lvar);
       break;
     }
     case INST_LDC: {
@@ -148,10 +162,13 @@ Object *vm_run(VMPtr vm) {
       }
       break;
     }
+    case INST_LDF:
+      s_push(&vm->s, new_closure_obj(vm->c->args_of.ldf.code, vm->e));
+      break;
     case INST_APP: {
       Object *proc_obj = s_pop(&vm->s);
       RootNode *proc_obj_node = NODE_TYPE_NEW_FUNC_NAME(RootNode)(&proc_obj);
-      if (!(proc_obj->tag == OBJ_PRIMITIVE)) {
+      if (!(proc_obj->tag == OBJ_CLOSURE || proc_obj->tag == OBJ_PRIMITIVE)) {
         Object *error = new_error_obj("apply only closure or primitive object");
         if (!roots_is_empty()) {
           DOUBLY_LINKED_LIST_REMOVE_FUNC_NAME(RootNode)(proc_obj_node);
@@ -164,25 +181,56 @@ Object *vm_run(VMPtr vm) {
       Object *args_list = s_pop(&vm->s);
       RootNode *args_list_node = NODE_TYPE_NEW_FUNC_NAME(RootNode)(&args_list);
 
-      Object *ret_obj = apply(proc_obj, args_list);
+      if (proc_obj->tag == OBJ_PRIMITIVE) {
+        Object *ret_obj = apply(proc_obj, args_list);
 
-      if (!roots_is_empty()) {
-        DOUBLY_LINKED_LIST_REMOVE_FUNC_NAME(RootNode)(proc_obj_node);
-        free(proc_obj_node);
-        DOUBLY_LINKED_LIST_REMOVE_FUNC_NAME(RootNode)(args_list_node);
-        free(args_list_node);
-      }
+        if (!roots_is_empty()) {
+          DOUBLY_LINKED_LIST_REMOVE_FUNC_NAME(RootNode)(proc_obj_node);
+          free(proc_obj_node);
+          DOUBLY_LINKED_LIST_REMOVE_FUNC_NAME(RootNode)(args_list_node);
+          free(args_list_node);
+        }
 
-      if (ret_obj->tag == OBJ_ERROR) {
-        current_working_vm = NULL;
-        return ret_obj;
+        if (ret_obj->tag == OBJ_ERROR) {
+          current_working_vm = NULL;
+          return ret_obj;
+        } else {
+          s_push(&vm->s, ret_obj);
+        }
       } else {
-        s_push(&vm->s, ret_obj);
+        d_push(&vm->d, vm->s, vm->e, vm->c->next);
+        vm->s = NULL;
+        Inst *clo_code = proc_obj->fields_of.closure.code_node->value;
+        Env *clo_env = proc_obj->fields_of.closure.env_node->value;
+        Env *nenv = new_env();
+        nenv->next = clo_env;
+        nenv->vars = args_list;
+        vm->e = nenv;
+        vm->c = clo_code;
+        continue;
       }
       break;
     }
+    case INST_RTN: {
+      StackNode *save_s;
+      Env *save_e;
+      Inst *save_c;
+      d_pop(&vm->d, &save_s, &save_e, &save_c);
+
+      Object *result = s_pop(&vm->s);
+      if (result->tag == OBJ_ERROR) {
+        return result;
+      }
+
+      free_s(vm->s);
+      vm->s = save_s;
+      s_push(&vm->s, result);
+      vm->e = save_e;
+      vm->c = save_c;
+      continue;
+    }
     case INST_SEL: {
-      d_push(&vm->d, NULL, vm->c->next);
+      d_push(&vm->d, NULL, new_env(), vm->c->next);
       Object *cond_obj = s_pop(&vm->s);
       if (cond_obj->tag != OBJ_BOOLEAN
           || (cond_obj->tag == OBJ_BOOLEAN && cond_obj == TRUE)) {
@@ -194,10 +242,13 @@ Object *vm_run(VMPtr vm) {
     }
     case INST_JOIN: {
       Inst *inst_node;
-      d_pop(&vm->d, NULL, &inst_node);
+      d_pop(&vm->d, NULL, NULL, &inst_node);
       vm->c = inst_node;
       continue;
     }
+    case INST_POP:
+      s_pop(&vm->s);
+      break;
     case INST_ARGS: {
       Object *args_list = NIL;
       RootNode *args_list_node = NODE_TYPE_NEW_FUNC_NAME(RootNode)(&args_list);
@@ -224,14 +275,13 @@ Object *vm_run(VMPtr vm) {
 
 void vm_collect_roots(VMPtr vm) {
   stack_collect_roots(vm->s);
-
+  env_collect_roots(vm->e);
   code_collect_roots(vm->c);
   dump_collect_roots(vm->d);
 }
 
-void free_vm(VMPtr vm, bool also_free_code) {
+void free_vm(VMPtr vm) {
   free_s(vm->s);
-  if (also_free_code) free_code(vm->code_top);
   free_d(vm->d);
   free(vm);
 }

@@ -35,6 +35,13 @@ Object *new_cell_obj(Object *car, Object *cdr) {
 //   free(obj);
 // }
 
+Object *new_closure_obj(Inst *code, Env *env) {
+  Object *obj = new_obj(OBJ_CLOSURE);
+  obj->fields_of.closure.code_node = NODE_TYPE_NEW_FUNC_NAME(CodeNode)(code);
+  obj->fields_of.closure.env_node = NODE_TYPE_NEW_FUNC_NAME(EnvNode)(env);
+  return obj;
+}
+
 Object *new_error_obj(char *message) {
   Object *obj = new_obj(OBJ_ERROR);
   obj->fields_of.error.message = NODE_TYPE_NEW_FUNC_NAME(StringNode)(strdup(message));
@@ -127,6 +134,9 @@ void print_obj(Object *obj) {
       putchar(')');
     }
     break;
+  case OBJ_CLOSURE:
+    printf("#<closure %p>", obj);
+    break;
   case OBJ_ERROR:
     printf("error: %s", obj->fields_of.error.message->value);
     break;
@@ -167,3 +177,17 @@ void print_obj(Object *obj) {
 //   }
 //   return obj;
 // }
+
+// リストの長さを返す。渡されたオブジェクトがペアだったら -1 を返す
+int get_list_length(Object *obj) {
+  int count = 0;
+  while (obj != NIL) {
+    count++;
+    if (CDR(obj)->tag != OBJ_CELL) {
+      count = -1;
+      break;
+    }
+    obj = CDR(obj);
+  }
+  return count;
+}

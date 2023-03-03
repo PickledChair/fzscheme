@@ -27,10 +27,33 @@ void string_list_gc(void);
 void DOUBLY_LINKED_LIST_CLEAR_FUNC_NAME(StringNode)(void);
 
 //
-// vector_list.c
+// env.c
 //
 
 typedef struct Object Object;
+
+typedef struct Env Env;
+struct Env {
+  Object *vars;
+  Env *next;
+};
+
+Env *new_env(void);
+void env_collect_roots(Env *env);
+int location(Env *env, Object *symbol, int *i, int *j);
+Object *get_lvar(Env *env, int i, int j);
+int set_lvar(Env *env, int i, int j, Object *val);
+
+DEFINE_NODE_TYPE(EnvNode, Env *)
+
+EnvNode *NODE_TYPE_NEW_FUNC_NAME(EnvNode)(Env * env);
+void mark_env_node(EnvNode *node);
+void env_list_gc(void);
+void DOUBLY_LINKED_LIST_CLEAR_FUNC_NAME(EnvNode)(void);
+
+//
+// vector_list.c
+//
 
 DEFINE_NODE_TYPE(ObjectVectorNode, Object **)
 
@@ -50,10 +73,14 @@ uint32_t str_hash(char *str);
 // object.c
 //
 
+typedef struct Inst Inst;
+DEFINE_NODE_TYPE(CodeNode, Inst *)
+
 typedef enum ObjectTag {
   OBJ_UNDEF,
   OBJ_BOOLEAN,
   OBJ_CELL,
+  OBJ_CLOSURE,
   OBJ_ERROR,
   OBJ_INTEGER,
   OBJ_PRIMITIVE,
@@ -75,6 +102,11 @@ struct Object {
       Object *car;
       Object *cdr;
     } cell;
+
+    struct {
+      CodeNode *code_node;
+      EnvNode *env_node;
+    } closure;
 
     struct {
       StringNode *message;
@@ -117,6 +149,7 @@ struct Object {
   }
 
 Object *new_cell_obj(Object *car, Object *cdr);
+Object *new_closure_obj(Inst *code, Env *env);
 Object *new_error_obj(char *message);
 Object *new_integer_obj(long value);
 Object *new_string_obj(char *value);
@@ -126,6 +159,7 @@ Object *new_vector_obj(size_t size, Object *fill);
 // void free_obj(Object *obj);
 void print_obj(Object *obj);
 // Object *process_moved_obj(Object *obj);
+int get_list_length(Object *obj);
 
 extern Object *UNDEF;
 extern Object *NIL;
@@ -216,16 +250,19 @@ void DOUBLY_LINKED_LIST_CLEAR_FUNC_NAME(ParserRootNode)(void);
 
 typedef enum {
   INST_DEF,
+  INST_LD,
   INST_LDC,
   INST_LDG,
+  INST_LDF,
   INST_ARGS,
   INST_APP,
+  INST_RTN,
   INST_SEL,
   INST_JOIN,
+  INST_POP,
   INST_STOP,
 } InstTag;
 
-typedef struct Inst Inst;
 struct Inst {
   InstTag tag;
   Inst *next;
@@ -236,12 +273,21 @@ struct Inst {
     } def;
 
     struct {
+      int i;
+      int j;
+    } ld;
+
+    struct {
       Object *constant;
     } ldc;
 
     struct {
       Object *symbol;
     } ldg;
+
+    struct {
+      Inst *code;
+    } ldf;
 
     struct {
       size_t args_num;
@@ -259,6 +305,11 @@ void print_code(Inst *code, int level);
 void code_collect_roots(Inst *code);
 Inst *compile(Object *ast);
 
+CodeNode *NODE_TYPE_NEW_FUNC_NAME(CodeNode)(Inst *code);
+void mark_code_node(CodeNode *node);
+void code_list_gc(void);
+void DOUBLY_LINKED_LIST_CLEAR_FUNC_NAME(CodeNode)(void);
+
 //
 // vm.c
 //
@@ -269,7 +320,7 @@ extern VMPtr current_working_vm;
 VMPtr new_vm(Inst *code);
 Object *vm_run(VMPtr vm);
 void vm_collect_roots(VMPtr vm);
-void free_vm(VMPtr vm, bool also_free_code);
+void free_vm(VMPtr vm);
 
 //
 // primitive.c

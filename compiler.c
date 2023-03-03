@@ -1,5 +1,23 @@
 #include "fzscheme.h"
 
+DEFINE_DOUBLY_LINKED_LIST_FUNCS(CodeNode, Inst, true)
+static CodeNode *marked_code_list_head = &(CodeNode){};
+
+void mark_code_node(CodeNode *node) {
+  DOUBLY_LINKED_LIST_REMOVE_FUNC_NAME(CodeNode)(node);
+  DOUBLY_LINKED_LIST_PUSH_FUNC_NAME(CodeNode)(node, &marked_code_list_head);
+}
+
+void code_list_gc(void) {
+  DOUBLY_LINKED_LIST_CLEAR_FUNC_NAME(CodeNode)();
+  if (marked_code_list_head->next != NULL) {
+    DOUBLY_LINKED_LIST_HEAD_NAME(CodeNode)->next = marked_code_list_head->next;
+    marked_code_list_head->next->prev = DOUBLY_LINKED_LIST_HEAD_NAME(CodeNode);
+
+    marked_code_list_head->next = NULL;
+  }
+}
+
 static Inst *new_inst(InstTag tag) {
   Inst *inst = calloc(1, sizeof(Inst));
   inst->tag = tag;
@@ -14,6 +32,13 @@ static Inst *inst_def(Object *symbol) {
   return inst;
 }
 
+static Inst *inst_ld(int i, int j) {
+  Inst *inst = new_inst(INST_LD);
+  inst->args_of.ld.i = i;
+  inst->args_of.ld.j = j;
+  return inst;
+}
+
 static Inst *inst_ldc(Object *constant) {
   Inst *inst = new_inst(INST_LDC);
   inst->args_of.ldc.constant = constant;
@@ -23,6 +48,12 @@ static Inst *inst_ldc(Object *constant) {
 static Inst *inst_ldg(Object *symbol) {
   Inst *inst = new_inst(INST_LDG);
   inst ->args_of.ldg.symbol = symbol;
+  return inst;
+}
+
+static Inst *inst_ldf(Inst *code) {
+  Inst *inst = new_inst(INST_LDF);
+  inst->args_of.ldf.code = code;
   return inst;
 }
 
@@ -39,13 +70,20 @@ static Inst *inst_sel(Inst *t_clause, Inst *f_clause) {
   return inst;
 }
 
+static Inst *inst_pop(void) { return new_inst(INST_POP); }
+
 static Inst *inst_join(void) { return new_inst(INST_JOIN); }
 
 static Inst *inst_app(void) { return new_inst(INST_APP); }
 
+static Inst *inst_rtn(void) { return new_inst(INST_RTN); }
+
 void free_code(Inst *code) {
   Inst *next;
   for (Inst *cur = code; cur != NULL; cur = next) {
+    if (cur->tag == INST_LDF) {
+      free_code(cur->args_of.ldf.code);
+    }
     if (cur->tag == INST_SEL) {
       free_code(cur->args_of.sel.t_clause);
       free_code(cur->args_of.sel.f_clause);
@@ -66,6 +104,9 @@ void print_code(Inst *code, int level) {
       print_obj(cur->args_of.def.symbol);
       putchar('\n');
       break;
+    case INST_LD:
+      printf("ld (%d . %d)\n", cur->args_of.ld.i, cur->args_of.ld.j);
+      break;
     case INST_LDC:
       printf("ldc ");
       print_obj(cur->args_of.ldc.constant);
@@ -76,11 +117,22 @@ void print_code(Inst *code, int level) {
       print_obj(cur->args_of.ldg.symbol);
       putchar('\n');
       break;
+    case INST_LDF:
+      printf("ldf\n");
+      for (int i = 0; i < level; i++) {
+        putchar(' ');
+      }
+      printf("code:\n");
+      print_code(cur->args_of.ldf.code, level + 1);
+      break;
     case INST_ARGS:
       printf("args %zu\n", cur->args_of.args.args_num);
       break;
     case INST_APP:
       printf("app\n");
+      break;
+    case INST_RTN:
+      printf("rtn\n");
       break;
     case INST_SEL:
       printf("sel\n");
@@ -98,6 +150,9 @@ void print_code(Inst *code, int level) {
     case INST_JOIN:
       printf("join\n");
       break;
+    case INST_POP:
+      printf("pop\n");
+      break;
     case INST_STOP:
       printf("stop\n");
       break;
@@ -110,6 +165,9 @@ void code_collect_roots(Inst *code) {
     switch (cur->tag) {
     case INST_LDC:
       NODE_TYPE_NEW_FUNC_NAME(RootNode)(&cur->args_of.ldc.constant);
+      break;
+    case INST_LDF:
+      code_collect_roots(cur->args_of.ldf.code);
       break;
     case INST_SEL:
       code_collect_roots(cur->args_of.sel.t_clause);
@@ -136,9 +194,10 @@ static size_t get_args_len(Object *obj) {
   return len - 1;
 }
 
-static Inst *compile_list(Object *list, Inst *code);
+static Inst *compile_list(Object *list, Env *env, Inst *code);
+static Inst *compile_body(Object *body, Env *env, Inst *code);
 
-static Inst *compile_expr(Object *obj, Inst *code) {
+static Inst *compile_expr(Object *obj, Env *env, Inst *code) {
   switch (obj->tag) {
   case OBJ_BOOLEAN:
   case OBJ_INTEGER:
@@ -148,9 +207,16 @@ static Inst *compile_expr(Object *obj, Inst *code) {
     return ldc_code;
   }
   case OBJ_SYMBOL: {
-    Inst *ldg_code = inst_ldg(obj);
-    ldg_code->next = code;
-    return ldg_code;
+    int i, j;
+    if (location(env, obj, &i, &j) == 0) {
+      Inst *ld_code = inst_ld(i, j);
+      ld_code->next = code;
+      return ld_code;
+    } else {
+      Inst *ldg_code = inst_ldg(obj);
+      ldg_code->next = code;
+      return ldg_code;
+    }
   }
   case OBJ_CELL:
     if (obj != NIL) {
@@ -161,7 +227,6 @@ static Inst *compile_expr(Object *obj, Inst *code) {
           return ldc_code;
         } else {
           printf("compile error: shortage of the args of `quote`\n");
-          free_code(code);
           return NULL;
         }
       }
@@ -172,20 +237,48 @@ static Inst *compile_expr(Object *obj, Inst *code) {
           Object *third = CAR(CDR(CDR(obj)));
           Object *forth = CDR(CDR(CDR(obj))) == NIL ? NULL : CAR(CDR(CDR(CDR(obj))));
 
-          Inst *t_clause = compile_expr(third, inst_join());
+          Inst *join_code = inst_join();
+          Inst *t_clause = compile_expr(third, env, join_code);
+          if (t_clause == NULL) {
+            return NULL;
+          }
           Inst *f_clause = NULL;
           if (forth) {
-            f_clause = compile_expr(forth, inst_join());
+            f_clause = compile_expr(forth, env, inst_join());
+            if (f_clause == NULL) {
+              return NULL;
+            }
           } else {
             f_clause = inst_ldc(UNDEF);
             f_clause->next = inst_join();
           }
           Inst *sel_code = inst_sel(t_clause, f_clause);
           sel_code->next = code;
-          return compile_expr(second, sel_code);
+          return compile_expr(second, env, sel_code);
         } else {
           printf("compile error: shortage of the args of `if`\n");
-          free_code(code);
+          return NULL;
+        }
+      }
+
+      if (CAR(obj) == intern_name("lambda")) {
+        if (CDR(obj) != NIL && CDR(CDR(obj)) != NIL) {
+          Object *args = CAR(CDR(obj)), *body = CDR(CDR(obj));
+
+          Env *nenv = new_env();
+          nenv->vars = args;
+          nenv->next = env;
+
+          Inst *rtn_code = inst_rtn();
+          Inst *body_code = compile_body(body, nenv, rtn_code);
+          if (body_code == NULL) {
+            return NULL;
+          }
+          Inst *ldf_code = inst_ldf(body_code);
+          ldf_code->next = code;
+          return ldf_code;
+        } else {
+          printf("compile error: shortage of the args of `lambda`\n");
           return NULL;
         }
       }
@@ -195,49 +288,62 @@ static Inst *compile_expr(Object *obj, Inst *code) {
           Object *second = CAR(CDR(obj)), *third = CAR(CDR(CDR(obj)));
           if (second->tag != OBJ_SYMBOL) {
             printf("compile error: only syntax (define name value) is supported\n");
-            free_code(code);
             return NULL;
           }
           Inst *def_code = inst_def(second);
           def_code->next = code;
-          return compile_expr(third, def_code);
+          return compile_expr(third, env, def_code);
         }
       }
 
       Inst *args_code = inst_args(get_args_len(obj));
       Inst *app_code = inst_app();
       app_code->next = code;
-      args_code->next = compile_expr(CAR(obj), app_code);
+      args_code->next = compile_expr(CAR(obj), env, app_code);
 
-      return compile_list(CDR(obj), args_code);
+      return compile_list(CDR(obj), env, args_code);
     } else {
       printf("compile error: attempt to evaluate nil\n");
-      free_code(code);
       return NULL;
     }
   default:
     printf("compile error: not yet implemented instructions\n");
-    free_code(code);
     return NULL;
   }
 }
 
-static Inst *compile_list(Object *list, Inst *code) {
+static Inst *compile_list(Object *list, Env *env, Inst *code) {
   if (list == NIL) {
     return code;
   } else {
     if (list->tag == OBJ_CELL) {
-      Inst *compiled_list = compile_list(CDR(list), code);
-      return compile_expr(CAR(list), compiled_list);
+      Inst *compiled_list = compile_list(CDR(list), env, code);
+      return compile_expr(CAR(list), env, compiled_list);
     } else {
       // for pair
-      return compile_expr(list, code);
+      return compile_expr(list, env, code);
+    }
+  }
+}
+
+static Inst *compile_body(Object *body, Env *env, Inst *code) {
+  switch (get_list_length(body)) {
+    case 0:
+      printf("prevent body to be empty by following code\n");
+      return NULL;
+    case 1:
+      return compile_expr(CAR(body), env, code);
+    default: {
+      Inst *pop_code = inst_pop();
+      Inst *rest_code = compile_body(CDR(body), env, code);
+      pop_code->next = rest_code;
+      return compile_expr(CAR(body), env, pop_code);
     }
   }
 }
 
 Inst *compile(Object *ast) {
   Inst *stop_code = inst_stop();
-  Inst *result_code = compile_expr(ast, stop_code);
+  Inst *result_code = compile_expr(ast, new_env(), stop_code);
   return result_code;
 }

@@ -9,10 +9,13 @@ static void fzscm_init(void) {
 
 void fzscm_deinit(void) {
   if (current_working_vm) {
-    free_vm(current_working_vm, true);
+    free_vm(current_working_vm);
   }
   fzscm_memspace_fin();
   DOUBLY_LINKED_LIST_CLEAR_FUNC_NAME(StringNode)();
+  DOUBLY_LINKED_LIST_CLEAR_FUNC_NAME(ObjectVectorNode)();
+  DOUBLY_LINKED_LIST_CLEAR_FUNC_NAME(EnvNode)();
+  DOUBLY_LINKED_LIST_CLEAR_FUNC_NAME(CodeNode)();
   clear_symbol_table();
 }
 

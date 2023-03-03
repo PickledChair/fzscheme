@@ -123,7 +123,7 @@ int repl(void) {
           printf("==> ");
           print_obj(result_obj);
           putchar('\n');
-          free_vm(vm, true);
+          free_vm(vm);
         }
         // free_obj(obj);
       }

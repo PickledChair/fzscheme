@@ -62,13 +62,6 @@ static void forward_parser_roots(void) {
       if ((*cur_root->value)->tag != OBJ_MOVED) {
         FORWARD(*cur_root->value);
 
-        if ((*cur_root->value)->tag == OBJ_STRING) {
-          mark_string_node((*cur_root->value)->fields_of.string.str_node);
-        }
-        if ((*cur_root->value)->tag == OBJ_VECTOR) {
-          mark_vector_node((*cur_root->value)->fields_of.vector.vec_node);
-        }
-
         *cur_root->value = free_ptr;
         free_ptr += obj_size;
       } else {
@@ -83,6 +76,8 @@ static void forward_roots(void) {
   RootNode *cur_root = get_roots();
 
   while (cur_root != NULL) {
+    print_obj(*cur_root->value);
+    putchar('\n');
     if (obj_is_in_gc_heap(*cur_root->value)) {
       size_t obj_size = sizeof(**cur_root->value);
       if (debug_flag) {
@@ -96,13 +91,6 @@ static void forward_roots(void) {
 
       if ((*cur_root->value)->tag != OBJ_MOVED) {
         FORWARD(*cur_root->value);
-
-        if ((*cur_root->value)->tag == OBJ_STRING) {
-          mark_string_node((*cur_root->value)->fields_of.string.str_node);
-        }
-        if ((*cur_root->value)->tag == OBJ_VECTOR) {
-          mark_vector_node((*cur_root->value)->fields_of.vector.vec_node);
-        }
 
         *cur_root->value = free_ptr;
         free_ptr += obj_size;
@@ -155,7 +143,26 @@ static void forward_non_roots(void) {
         }
       }
       break;
+    case OBJ_CLOSURE: {
+      mark_env_node(cur_obj->fields_of.closure.env_node);
+      mark_code_node(cur_obj->fields_of.closure.code_node);
+      Object *vars = cur_obj->fields_of.closure.env_node->value->vars;
+      if (vars->tag != OBJ_MOVED) {
+        if (obj_is_in_gc_heap(vars)) {
+          FORWARD(vars);
+
+          cur_obj->fields_of.closure.env_node->value->vars = free_ptr;
+          free_ptr += sizeof(Object);
+        }
+      } else {
+        cur_obj->fields_of.closure.env_node->value->vars = vars->fields_of.moved.address;
+      }
+      code_collect_roots(cur_obj->fields_of.closure.code_node->value);
+      forward_roots();
+      break;
+    }
     case OBJ_VECTOR:
+      mark_vector_node(cur_obj->fields_of.vector.vec_node);
       for (size_t i = 0; i < cur_obj->fields_of.vector.size; i++) {
         Object *indexed_obj = cur_obj->fields_of.vector.vec_node->value[i];
         if (indexed_obj->tag != OBJ_MOVED) {
@@ -169,6 +176,7 @@ static void forward_non_roots(void) {
           cur_obj->fields_of.vector.vec_node->value[i] = indexed_obj->fields_of.moved.address;
         }
       }
+      break;
     case OBJ_STRING:
       mark_string_node(cur_obj->fields_of.string.str_node);
       break;
@@ -212,6 +220,8 @@ void fzscm_gc(void) {
   // 文字列とベクタは Scheme オブジェクトとは別に GC を行う
   string_list_gc();
   vector_list_gc();
+  env_list_gc();
+  code_list_gc();
 
   // GC 開始時に集めたルート集合のリストを破棄
   DOUBLY_LINKED_LIST_CLEAR_FUNC_NAME(RootNode)();

@@ -1,19 +1,5 @@
 #include "fzscheme.h"
 
-// リストの長さを返す。渡されたオブジェクトがペアだったら -1 を返す
-static int get_list_length(Object *obj) {
-  int count = 0;
-  while (obj != NIL) {
-    count++;
-    if (CDR(obj)->tag != OBJ_CELL) {
-      count = -1;
-      break;
-    }
-    obj = CDR(obj);
-  }
-  return count;
-}
-
 #define DEFINE_PRIM_OBJ(FN_NAME)      \
   Object *FN_NAME##_obj =             \
       &(Object){.tag = OBJ_PRIMITIVE, \
