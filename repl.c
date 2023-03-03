@@ -28,7 +28,7 @@ static int get_paren_level(int init_level, Token *start_tok, Token **end_tok_des
   return level;
 }
 
-#define INPUT_BUF_SIZE 256
+#define INPUT_BUF_SIZE 1024
 
 int repl(void) {
   char buffer[INPUT_BUF_SIZE];
