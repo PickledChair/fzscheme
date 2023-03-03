@@ -65,6 +65,16 @@ void free_symbol_obj(Object *obj) {
   free(obj);
 }
 
+Object *new_vector_obj(size_t size, Object *fill) {
+  Object *obj = new_obj(OBJ_VECTOR), *fill_obj = (fill == NULL) ? UNDEF : fill;
+  obj->fields_of.vector.vec_node = NODE_TYPE_NEW_FUNC_NAME(ObjectVectorNode)(calloc(size, sizeof(Object *)));
+  for (size_t i = 0; i < size; i++) {
+    obj->fields_of.vector.vec_node->value[i] = fill_obj;
+  }
+  obj->fields_of.vector.size = size;
+  return obj;
+}
+
 // static void free_string_obj(Object *obj) {
 //   free(obj->fields_of.string.value);
 //   free(obj);
@@ -136,6 +146,13 @@ void print_obj(Object *obj) {
     printf("<moved>");
     print_obj(obj->fields_of.moved.address);
     break;
+  case OBJ_VECTOR:
+    printf("#(");
+    for (size_t i = 0; i < obj->fields_of.vector.size; i++) {
+      if (i != 0) putchar(' ');
+      print_obj(obj->fields_of.vector.vec_node->value[i]);
+    }
+    putchar(')');
   }
 }
 

@@ -48,24 +48,27 @@
 
 #define DOUBLY_LINKED_LIST_CLEAR_FUNC_NAME(NODE_TYPE_NAME) \
   NODE_TYPE_NAME##_clear
-#define DEFINE_DOUBLY_LINKED_LIST_CLEAR_FUNC(NODE_TYPE_NAME,                  \
-                                             SHOULD_FREE_VALUE)               \
-  void DOUBLY_LINKED_LIST_CLEAR_FUNC_NAME(NODE_TYPE_NAME)(void) {             \
-    NODE_TYPE_NAME *cur = DOUBLY_LINKED_LIST_HEAD_NAME(NODE_TYPE_NAME)->next, \
-                   *next;                                                     \
-    DOUBLY_LINKED_LIST_HEAD_NAME(NODE_TYPE_NAME)->next = NULL;                \
-                                                                              \
-    while (cur != NULL) {                                                     \
-      next = cur->next;                                                       \
-      if (SHOULD_FREE_VALUE && strcmp(#NODE_TYPE_NAME, "StringNode") == 0) {  \
-        if (debug_flag) {                                                     \
-          printf("free string: %s\n", (char *)cur->value);                    \
-        }                                                                     \
-        free(cur->value);                                                     \
-      }                                                                       \
-      free(cur);                                                              \
-      cur = next;                                                             \
-    }                                                                         \
+#define DEFINE_DOUBLY_LINKED_LIST_CLEAR_FUNC(NODE_TYPE_NAME,                        \
+                                             SHOULD_FREE_VALUE)                     \
+  void DOUBLY_LINKED_LIST_CLEAR_FUNC_NAME(NODE_TYPE_NAME)(void) {                   \
+    NODE_TYPE_NAME *cur = DOUBLY_LINKED_LIST_HEAD_NAME(NODE_TYPE_NAME)->next,       \
+                   *next;                                                           \
+    DOUBLY_LINKED_LIST_HEAD_NAME(NODE_TYPE_NAME)->next = NULL;                      \
+                                                                                    \
+    while (cur != NULL) {                                                           \
+      next = cur->next;                                                             \
+      if (SHOULD_FREE_VALUE && strcmp(#NODE_TYPE_NAME, "StringNode") == 0) {        \
+        if (debug_flag) {                                                           \
+          printf("free string: %s\n", (char *)cur->value);                          \
+        }                                                                           \
+        free(cur->value);                                                           \
+      }                                                                             \
+      if (SHOULD_FREE_VALUE && strcmp(#NODE_TYPE_NAME, "ObjectVectorNode") == 0) {  \
+        free(cur->value);                                                           \
+      }                                                                             \
+      free(cur);                                                                    \
+      cur = next;                                                                   \
+    }                                                                               \
   }
 
 #define DEFINE_DOUBLY_LINKED_LIST_FUNCS(NODE_TYPE_NAME, VALUE_TYPE_NAME, \

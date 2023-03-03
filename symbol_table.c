@@ -145,6 +145,10 @@ void init_symbol_table(void) {
   REGISTER_PRIMITIVE("div", div);
   REGISTER_PRIMITIVE("modulo", modulo);
   REGISTER_PRIMITIVE("exit", exit);
+  REGISTER_PRIMITIVE("make-vector", make_vector);
+  REGISTER_PRIMITIVE("vector-ref", vector_ref);
+  REGISTER_PRIMITIVE("vector-set!", vector_set);
+  REGISTER_PRIMITIVE("vector-length", vector_length);
 }
 
 void clear_symbol_table(void) {

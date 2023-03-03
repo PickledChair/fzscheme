@@ -26,6 +26,19 @@ void mark_string_node(StringNode *node);
 void string_list_gc(void);
 void DOUBLY_LINKED_LIST_CLEAR_FUNC_NAME(StringNode)(void);
 
+//
+// vector_list.c
+//
+
+typedef struct Object Object;
+
+DEFINE_NODE_TYPE(ObjectVectorNode, Object **)
+
+ObjectVectorNode *NODE_TYPE_NEW_FUNC_NAME(ObjectVectorNode)(Object **objs);
+void mark_vector_node(ObjectVectorNode *node);
+void vector_list_gc(void);
+void DOUBLY_LINKED_LIST_CLEAR_FUNC_NAME(ObjectVectorNode)(void);
+
 
 //
 // hash.c
@@ -47,9 +60,9 @@ typedef enum ObjectTag {
   OBJ_STRING,
   OBJ_SYMBOL,
   OBJ_MOVED,
+  OBJ_VECTOR,
 } ObjectTag;
 
-typedef struct Object Object;
 typedef Object *(*PrimFunc)(Object *obj);
 struct Object {
   ObjectTag tag;
@@ -87,6 +100,11 @@ struct Object {
     struct {
       Object *address;
     } moved;
+
+    struct {
+      ObjectVectorNode *vec_node;
+      size_t size;
+    } vector;
   } fields_of;
 };
 
@@ -104,6 +122,7 @@ Object *new_integer_obj(long value);
 Object *new_string_obj(char *value);
 Object *new_symbol_obj(char *name);
 void free_symbol_obj(Object *obj);
+Object *new_vector_obj(size_t size, Object *fill);
 // void free_obj(Object *obj);
 void print_obj(Object *obj);
 // Object *process_moved_obj(Object *obj);
@@ -270,6 +289,10 @@ extern Object *prim_minus_obj;
 extern Object *prim_div_obj;
 extern Object *prim_modulo_obj;
 extern Object *prim_exit_obj;
+extern Object *prim_make_vector_obj;
+extern Object *prim_vector_ref_obj;
+extern Object *prim_vector_set_obj;
+extern Object *prim_vector_length_obj;
 
 //
 // repl.c

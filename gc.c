@@ -41,7 +41,7 @@ static void flip(void) {
 
 static bool obj_is_in_gc_heap(Object *obj) {
   return (obj != NULL && obj->tag != OBJ_BOOLEAN && obj->tag != OBJ_SYMBOL && obj != NIL
-          && obj->tag != OBJ_PRIMITIVE);
+          && obj->tag != OBJ_PRIMITIVE && obj != UNDEF);
 }
 
 static void forward_parser_roots(void) {
@@ -64,6 +64,9 @@ static void forward_parser_roots(void) {
 
         if ((*cur_root->value)->tag == OBJ_STRING) {
           mark_string_node((*cur_root->value)->fields_of.string.str_node);
+        }
+        if ((*cur_root->value)->tag == OBJ_VECTOR) {
+          mark_vector_node((*cur_root->value)->fields_of.vector.vec_node);
         }
 
         *cur_root->value = free_ptr;
@@ -96,6 +99,9 @@ static void forward_roots(void) {
 
         if ((*cur_root->value)->tag == OBJ_STRING) {
           mark_string_node((*cur_root->value)->fields_of.string.str_node);
+        }
+        if ((*cur_root->value)->tag == OBJ_VECTOR) {
+          mark_vector_node((*cur_root->value)->fields_of.vector.vec_node);
         }
 
         *cur_root->value = free_ptr;
@@ -149,6 +155,20 @@ static void forward_non_roots(void) {
         }
       }
       break;
+    case OBJ_VECTOR:
+      for (size_t i = 0; i < cur_obj->fields_of.vector.size; i++) {
+        Object *indexed_obj = cur_obj->fields_of.vector.vec_node->value[i];
+        if (indexed_obj->tag != OBJ_MOVED) {
+          if (obj_is_in_gc_heap(indexed_obj)) {
+            FORWARD(indexed_obj);
+
+            cur_obj->fields_of.vector.vec_node->value[i] = free_ptr;
+            free_ptr += sizeof(Object);
+          }
+        } else {
+          cur_obj->fields_of.vector.vec_node->value[i] = indexed_obj->fields_of.moved.address;
+        }
+      }
     case OBJ_STRING:
       mark_string_node(cur_obj->fields_of.string.str_node);
       break;
@@ -189,8 +209,9 @@ void fzscm_gc(void) {
   // root 以外の forward 処理
   forward_non_roots();
 
-  // 文字列は Scheme オブジェクトとは別に GC を行う
+  // 文字列とベクタは Scheme オブジェクトとは別に GC を行う
   string_list_gc();
+  vector_list_gc();
 
   // GC 開始時に集めたルート集合のリストを破棄
   DOUBLY_LINKED_LIST_CLEAR_FUNC_NAME(RootNode)();

@@ -201,3 +201,55 @@ static Object *prim_exit(Object *obj) {
   exit(status_code);
 }
 DEFINE_PRIM_OBJ(prim_exit)
+
+static Object *prim_make_vector(Object *obj) {
+  int args_len = get_list_length(obj);
+  if (args_len < 1) return new_error_obj("make-vector: arguments is empty");
+  if (CAR(obj)->tag != OBJ_INTEGER) return new_error_obj("make-vector: first argument is not integer");
+
+  size_t size = CAR(obj)->fields_of.integer.value;
+  if (size < 0) return new_error_obj("make-vector: first argument is not positive integer");
+  return new_vector_obj(size, (args_len > 1) ? CAR(CDR(obj)) : NULL);
+}
+DEFINE_PRIM_OBJ(prim_make_vector)
+
+static Object *prim_vector_ref(Object *obj) {
+  if (get_list_length(obj) != 2) return new_error_obj("vector-ref: wrong number of arguments, vector-ref requires 2");
+
+  Object *fst = CAR(obj), *snd = CAR(CDR(obj));
+  if (fst->tag != OBJ_VECTOR) return new_error_obj("vector-ref: first argument is not vector");
+  if (snd->tag != OBJ_INTEGER) return new_error_obj("vector-ref: second argument is not integer");
+
+  long index = snd->fields_of.integer.value;
+  if (index < 0) return new_error_obj("vector-ref: negative index is not allowed");
+  if (index >= fst->fields_of.vector.size) return new_error_obj("vector-ref: index is larger than the size of vector");
+
+  return fst->fields_of.vector.vec_node->value[index];
+}
+DEFINE_PRIM_OBJ(prim_vector_ref)
+
+static Object *prim_vector_set(Object *obj) {
+  if (get_list_length(obj) != 3) return new_error_obj("vector-set!: wrong number of arguments, vector-set! requires 3");
+
+  Object *fst = CAR(obj), *snd = CAR(CDR(obj)), *trd = CAR(CDR(CDR(obj)));
+  if (fst->tag != OBJ_VECTOR) return new_error_obj("vector-set!: first argument is not vector");
+  if (snd->tag != OBJ_INTEGER) return new_error_obj("vector-set!: second argument is not integer");
+
+  long index = snd->fields_of.integer.value;
+  if (index < 0) return new_error_obj("vector-set!: negative index is not allowed");
+  if (index >= fst->fields_of.vector.size) return new_error_obj("vector-set!: index is larger than the size of vector");
+
+  fst->fields_of.vector.vec_node->value[index] = trd;
+  return UNDEF;
+}
+DEFINE_PRIM_OBJ(prim_vector_set)
+
+static Object *prim_vector_length(Object *obj) {
+  if (get_list_length(obj) != 1) return new_error_obj("vector-length: wrong number of arguments, vector-length requires 1");
+
+  Object *fst = CAR(obj);
+  if (fst->tag != OBJ_VECTOR) return new_error_obj("vector-set!: first argument is not vector");
+
+  return new_integer_obj(fst->fields_of.vector.size);
+}
+DEFINE_PRIM_OBJ(prim_vector_length)
