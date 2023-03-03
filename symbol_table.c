@@ -1,6 +1,6 @@
 #include "fzscheme.h"
 
-#define SYMBOL_TABLE_SIZE (1024 + 9)
+#define SYMBOL_TABLE_SIZE (4096 + 3)
 
 typedef struct SymTableEntry SymTableEntry;
 struct SymTableEntry {
