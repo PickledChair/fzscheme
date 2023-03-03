@@ -84,10 +84,16 @@ Token *tokenize(char *input) {
     }
 
     // 整数リテラル
+    bool is_negative_num = false;
+    if (*input == '-' && *(input+1) != '\0' && isdigit(*(input+1))) {
+      is_negative_num = true;
+      input++;
+    }
     if (isdigit(*input)) {
       cur = cur->next = new_token(TK_INT, input, input);
       char *start = input;
       cur->val = strtoul(input, &input, 10);
+      if (is_negative_num) cur->val *= -1;
       cur->len = input - start;
       continue;
     }
