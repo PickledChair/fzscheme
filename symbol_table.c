@@ -144,6 +144,7 @@ void init_symbol_table(void) {
   REGISTER_PRIMITIVE("-", minus);
   REGISTER_PRIMITIVE("div", div);
   REGISTER_PRIMITIVE("modulo", modulo);
+  REGISTER_PRIMITIVE("exit", exit);
 }
 
 void clear_symbol_table(void) {

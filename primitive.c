@@ -189,3 +189,15 @@ static Object *prim_modulo(Object *obj) {
   return new_integer_obj(fst->fields_of.integer.value % snd->fields_of.integer.value);
 }
 DEFINE_PRIM_OBJ(prim_modulo)
+
+static Object *prim_exit(Object *obj) {
+  int status_code = 0;
+  if (get_list_length(obj) == 1) {
+    if (CAR(obj)->tag == OBJ_INTEGER) {
+      status_code = CAR(obj)->fields_of.integer.value;
+    }
+  }
+  fzscm_deinit();
+  exit(status_code);
+}
+DEFINE_PRIM_OBJ(prim_exit)

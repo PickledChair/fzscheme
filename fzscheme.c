@@ -3,7 +3,20 @@
 bool debug_flag = false;
 static size_t semispace_size = 0;
 
-void parse_args(int argc, char *argv[]) {
+static void fzscm_init(void) {
+  fzscm_memspace_init(semispace_size);
+}
+
+void fzscm_deinit(void) {
+  if (current_working_vm) {
+    free_vm(current_working_vm, true);
+  }
+  fzscm_memspace_fin();
+  DOUBLY_LINKED_LIST_CLEAR_FUNC_NAME(StringNode)();
+  clear_symbol_table();
+}
+
+static void parse_args(int argc, char *argv[]) {
   for (int i = 1; i < argc; i++) {
     if (strcmp(argv[i], "--debug") == 0) {
       debug_flag = true;
@@ -21,14 +34,11 @@ void parse_args(int argc, char *argv[]) {
 int main(int argc, char *argv[]) {
   parse_args(argc, argv);
 
-  fzscm_memspace_init(semispace_size);
+  fzscm_init();
 
   repl();
 
-  fzscm_memspace_fin();
-  // clear_string_list();
-  DOUBLY_LINKED_LIST_CLEAR_FUNC_NAME(StringNode)();
-  clear_symbol_table();
+  fzscm_deinit();
 
   return 0;
 }

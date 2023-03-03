@@ -269,9 +269,16 @@ extern Object *prim_times_obj;
 extern Object *prim_minus_obj;
 extern Object *prim_div_obj;
 extern Object *prim_modulo_obj;
+extern Object *prim_exit_obj;
 
 //
 // repl.c
 //
 
 int repl(void);
+
+//
+// fzscheme.c
+//
+
+void fzscm_deinit(void);

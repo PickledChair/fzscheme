@@ -56,10 +56,6 @@ int repl(void) {
       buffer[--length] = '\0';
     }
 
-    if (strcmp(buffer, "(exit)") == 0) {
-      break;
-    }
-
     if (strcmp(buffer, "") == 0) {
       continue;
     }
