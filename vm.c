@@ -231,7 +231,7 @@ void vm_collect_roots(VMPtr vm) {
 
 void free_vm(VMPtr vm, bool also_free_code) {
   free_s(vm->s);
-  if (also_free_code) free_code(vm->c);
+  if (also_free_code) free_code(vm->code_top);
   free_d(vm->d);
   free(vm);
 }
