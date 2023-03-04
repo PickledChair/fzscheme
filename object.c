@@ -35,10 +35,10 @@ Object *new_cell_obj(Object *car, Object *cdr) {
 //   free(obj);
 // }
 
-Object *new_closure_obj(Inst *code, Env *env) {
+Object *new_closure_obj(CodeNode *code, EnvNode *env) {
   Object *obj = new_obj(OBJ_CLOSURE);
-  obj->fields_of.closure.code_node = NODE_TYPE_NEW_FUNC_NAME(CodeNode)(code);
-  obj->fields_of.closure.env_node = NODE_TYPE_NEW_FUNC_NAME(EnvNode)(env);
+  obj->fields_of.closure.code_node = code;
+  obj->fields_of.closure.env_node = env;
   return obj;
 }
 

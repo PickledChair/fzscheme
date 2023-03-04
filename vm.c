@@ -44,26 +44,28 @@ static void stack_collect_roots(StackNode *node) {
 typedef struct DumpNode DumpNode;
 struct DumpNode {
   StackNode *stack;
-  Env *env;
-  Inst *code;
+  EnvNode *env;
+  CodeNode *code;
+  Inst *pc;
   DumpNode *next;
 };
 
-static DumpNode *new_dump_node(StackNode *stack, Env *env, Inst *code) {
+static DumpNode *new_dump_node(StackNode *stack, EnvNode *env, CodeNode *code, Inst *pc) {
   DumpNode *dump = calloc(1, sizeof(DumpNode));
   dump->stack = stack;
   dump->env = env;
   dump->code = code;
+  dump->pc = pc;
   return dump;
 }
 
-static void d_push(DumpNode **d, StackNode *stack, Env *env, Inst *code) {
-  DumpNode *node = new_dump_node(stack, env, code);
+static void d_push(DumpNode **d, StackNode *stack, EnvNode *env, CodeNode *code, Inst *pc) {
+  DumpNode *node = new_dump_node(stack, env, code, pc);
   node->next = *d;
   *d = node;
 }
 
-static int d_pop(DumpNode **d, StackNode **stack, Env **env, Inst **code) {
+static int d_pop(DumpNode **d, StackNode **stack, EnvNode **env, CodeNode **code, Inst **pc) {
   if (*d == NULL) {
     *stack = NULL;
     *env = NULL;
@@ -78,6 +80,9 @@ static int d_pop(DumpNode **d, StackNode **stack, Env **env, Inst **code) {
   }
   if (code) {
     *code = (*d)->code;
+  }
+  if (pc) {
+    *pc = (*d)->pc;
   }
   DumpNode *next = (*d)->next;
   free(*d);
@@ -101,6 +106,9 @@ static void dump_collect_roots(DumpNode *node) {
     if (cur->stack) {
       stack_collect_roots(cur->stack);
     }
+    if (cur->env) {
+      env_collect_roots(cur->env);
+    }
     if (cur->code) {
       code_collect_roots(cur->code);
     }
@@ -109,18 +117,19 @@ static void dump_collect_roots(DumpNode *node) {
 
 struct VM {
   StackNode *s;
-  Env *e;
-  Inst *c;
+  EnvNode *e;
+  CodeNode *c;
   DumpNode *d;
-  Inst *code_top;
+  Inst *pc;
 } VM;
 
 VMPtr current_working_vm = NULL;
 
 VMPtr new_vm(Inst *code) {
   VMPtr vm = calloc(1, sizeof(VM));
-  vm->e = new_env();
-  vm->c = vm->code_top = code;
+  vm->e = NODE_TYPE_NEW_FUNC_NAME(EnvNode)(new_env());
+  vm->c = NODE_TYPE_NEW_FUNC_NAME(CodeNode)(code);
+  vm->pc = vm->c->value;
   return vm;
 }
 
@@ -132,38 +141,38 @@ Object *vm_run(VMPtr vm) {
   current_working_vm = vm;
   char error_message[ERROR_MESSAGE_LEN] = {};
   for (;;) {
-    switch (vm->c->tag) {
+    switch (vm->pc->tag) {
     case INST_DEF: {
-      Object *symbol = vm->c->args_of.def.symbol;
+      Object *symbol = vm->pc->args_of.def.symbol;
       insert_to_global_env(symbol, s_pop(&vm->s));
       s_push(&vm->s, symbol);
       break;
     }
     case INST_LD: {
-      int i = vm->c->args_of.ld.i, j = vm->c->args_of.ld.j;
+      int i = vm->pc->args_of.ld.i, j = vm->pc->args_of.ld.j;
       Object *lvar = get_lvar(vm->e, i, j);
       s_push(&vm->s, lvar);
       break;
     }
     case INST_LDC: {
-      s_push(&vm->s, vm->c->args_of.ldc.constant);
+      s_push(&vm->s, vm->pc->args_of.ldc.constant);
       break;
     }
     case INST_LDG: {
-      Object *value = get_from_global_env(vm->c->args_of.ldg.symbol);
+      Object *value = get_from_global_env(vm->pc->args_of.ldg.symbol);
       if (value != NULL) {
         s_push(&vm->s, value);
       } else {
         sprintf(error_message,
                 "symbol `%s` is not found in the global environment",
-                vm->c->args_of.ldg.symbol->fields_of.symbol.name);
+                vm->pc->args_of.ldg.symbol->fields_of.symbol.name);
         current_working_vm = NULL;
         return new_error_obj(error_message);
       }
       break;
     }
     case INST_LDF:
-      s_push(&vm->s, new_closure_obj(vm->c->args_of.ldf.code, vm->e));
+      s_push(&vm->s, new_closure_obj(vm->pc->args_of.ldf.code, vm->e));
       break;
     case INST_APP: {
       Object *proc_obj = s_pop(&vm->s);
@@ -198,24 +207,26 @@ Object *vm_run(VMPtr vm) {
           s_push(&vm->s, ret_obj);
         }
       } else {
-        d_push(&vm->d, vm->s, vm->e, vm->c->next);
+        d_push(&vm->d, vm->s, vm->e, vm->c, vm->pc->next);
         vm->s = NULL;
-        Inst *clo_code = proc_obj->fields_of.closure.code_node->value;
-        Env *clo_env = proc_obj->fields_of.closure.env_node->value;
-        Env *nenv = new_env();
-        nenv->next = clo_env;
-        nenv->vars = args_list;
+        CodeNode *clo_code = proc_obj->fields_of.closure.code_node;
+        EnvNode *clo_env = proc_obj->fields_of.closure.env_node;
+        EnvNode *nenv = NODE_TYPE_NEW_FUNC_NAME(EnvNode)(new_env());
+        nenv->value->next = clo_env;
+        nenv->value->vars = args_list;
         vm->e = nenv;
         vm->c = clo_code;
+        vm->pc = vm->c->value;
         continue;
       }
       break;
     }
     case INST_RTN: {
       StackNode *save_s;
-      Env *save_e;
-      Inst *save_c;
-      d_pop(&vm->d, &save_s, &save_e, &save_c);
+      EnvNode *save_e;
+      CodeNode *save_c;
+      Inst *save_pc;
+      d_pop(&vm->d, &save_s, &save_e, &save_c, &save_pc);
 
       Object *result = s_pop(&vm->s);
       if (result->tag == OBJ_ERROR) {
@@ -227,23 +238,27 @@ Object *vm_run(VMPtr vm) {
       s_push(&vm->s, result);
       vm->e = save_e;
       vm->c = save_c;
+      vm->pc = save_pc;
       continue;
     }
     case INST_SEL: {
-      d_push(&vm->d, NULL, new_env(), vm->c->next);
+      d_push(&vm->d, NULL, NODE_TYPE_NEW_FUNC_NAME(EnvNode)(new_env()), vm->c, vm->pc->next);
       Object *cond_obj = s_pop(&vm->s);
       if (cond_obj->tag != OBJ_BOOLEAN
           || (cond_obj->tag == OBJ_BOOLEAN && cond_obj == TRUE)) {
-        vm->c = vm->c->args_of.sel.t_clause;
+        vm->c = vm->pc->args_of.sel.t_clause;
       } else {
-        vm->c = vm->c->args_of.sel.f_clause;
+        vm->c = vm->pc->args_of.sel.f_clause;
       }
+      vm->pc = vm->c->value;
       continue;
     }
     case INST_JOIN: {
-      Inst *inst_node;
-      d_pop(&vm->d, NULL, NULL, &inst_node);
-      vm->c = inst_node;
+      CodeNode *save_c;
+      Inst *save_pc;
+      d_pop(&vm->d, NULL, NULL, &save_c, &save_pc);
+      vm->c = save_c;
+      vm->pc = save_pc;
       continue;
     }
     case INST_POP:
@@ -252,7 +267,7 @@ Object *vm_run(VMPtr vm) {
     case INST_ARGS: {
       Object *args_list = NIL;
       RootNode *args_list_node = NODE_TYPE_NEW_FUNC_NAME(RootNode)(&args_list);
-      size_t args_num = vm->c->args_of.args.args_num;
+      size_t args_num = vm->pc->args_of.args.args_num;
       while (args_num--) {
         args_list = new_cell_obj(s_pop(&vm->s), args_list);
         if (roots_is_empty()) {
@@ -269,7 +284,7 @@ Object *vm_run(VMPtr vm) {
       return s_pop(&vm->s);
     }
 
-    vm->c = vm->c->next;
+    vm->pc = vm->pc->next;
   }
 }
 

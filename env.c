@@ -25,9 +25,10 @@ Env *new_env(void) {
   return env;
 }
 
-void env_collect_roots(Env *env) {
-  for (Env *cur = env; cur != NULL; cur = cur->next) {
-    NODE_TYPE_NEW_FUNC_NAME(RootNode)(&cur->vars);
+void env_collect_roots(EnvNode *env) {
+  for (EnvNode *cur = env; cur != NULL; cur = cur->value->next) {
+    mark_env_node(cur);
+    NODE_TYPE_NEW_FUNC_NAME(RootNode)(&cur->value->vars);
   }
 }
 
@@ -65,30 +66,30 @@ static int position_var(Object *symbol, Object *vars, int *pos) {
   }
 }
 
-static int location_helper(Env *env, Object *symbol, int cur_i, int *i, int *j) {
+static int location_helper(EnvNode *env, Object *symbol, int cur_i, int *i, int *j) {
   int cur_j;
-  if (position_var(symbol, env->vars, &cur_j) == 0) {
+  if (position_var(symbol, env->value->vars, &cur_j) == 0) {
     *i = cur_i;
     *j = cur_j;
     return 0;
   } else {
-    if (env->next) {
-      return location_helper(env->next, symbol, cur_i + 1, i, j);
+    if (env->value->next) {
+      return location_helper(env->value->next, symbol, cur_i + 1, i, j);
     } else {
       return -1;
     }
   }
 }
 
-int location(Env *env, Object *symbol, int *i, int *j) {
+int location(EnvNode *env, Object *symbol, int *i, int *j) {
   return location_helper(env, symbol, 0, i, j);
 }
 
-static Object *get_helper(Env *env, int tmp_i, int target_i, int j) {
+static Object *get_helper(EnvNode *env, int tmp_i, int target_i, int j) {
   if (tmp_i == target_i) {
-    if (env->vars->tag == OBJ_CELL) {
+    if (env->value->vars->tag == OBJ_CELL) {
       int pos = (j < 0) ? -(j + 1) : j;
-      Object *obj = env->vars;
+      Object *obj = env->value->vars;
       if (obj == NIL && j != -1)
         return NULL;
       for (int k = 0; k < pos; k++)
@@ -99,38 +100,38 @@ static Object *get_helper(Env *env, int tmp_i, int target_i, int j) {
         return CAR(obj);
     } else {
       if (j == -1) {
-        return env->vars;
+        return env->value->vars;
       } else {
         return NULL;
       }
     }
   } else {
-    if (env->next) {
-      return get_helper(env->next, tmp_i + 1, target_i, j);
+    if (env->value->next) {
+      return get_helper(env->value->next, tmp_i + 1, target_i, j);
     } else {
       return NULL;
     }
   }
 }
 
-Object *get_lvar(Env *env, int i, int j) {
+Object *get_lvar(EnvNode *env, int i, int j) {
   return get_helper(env, 0, i, j);
 }
 
-static int set_helper(Env *env, int tmp_i, int target_i, int j, Object *val) {
+static int set_helper(EnvNode *env, int tmp_i, int target_i, int j, Object *val) {
   if (tmp_i == target_i) {
     if (j >= 0) {
-      Object *var = env->vars;
+      Object *var = env->value->vars;
       for (int k = 0; k <= j; k++)
         var = CDR(var);
       CAR(var) = val;
       return 0;
     } else {
       if (j == -1) {
-        env->vars = val;
+        env->value->vars = val;
         return 0;
       } else {
-        Object *tail = env->vars;
+        Object *tail = env->value->vars;
         for (int k = 0; k < -j; k++)
           tail = CDR(tail);
         CDR(tail) = val;
@@ -138,13 +139,13 @@ static int set_helper(Env *env, int tmp_i, int target_i, int j, Object *val) {
       }
     }
   } else {
-    if (env->next)
-      return set_helper(env->next, tmp_i + 1, target_i, j, val);
+    if (env->value->next)
+      return set_helper(env->value->next, tmp_i + 1, target_i, j, val);
     else
       return -1;
   }
 }
 
-int set_lvar(Env *env, int i, int j, Object *val) {
+int set_lvar(EnvNode *env, int i, int j, Object *val) {
   return set_helper(env, 0, i, j, val);
 }

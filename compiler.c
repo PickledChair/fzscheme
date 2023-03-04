@@ -53,7 +53,7 @@ static Inst *inst_ldg(Object *symbol) {
 
 static Inst *inst_ldf(Inst *code) {
   Inst *inst = new_inst(INST_LDF);
-  inst->args_of.ldf.code = code;
+  inst->args_of.ldf.code = NODE_TYPE_NEW_FUNC_NAME(CodeNode)(code);
   return inst;
 }
 
@@ -65,8 +65,8 @@ static Inst *inst_args(size_t args_num) {
 
 static Inst *inst_sel(Inst *t_clause, Inst *f_clause) {
   Inst *inst = new_inst(INST_SEL);
-  inst->args_of.sel.t_clause = t_clause;
-  inst->args_of.sel.f_clause = f_clause;
+  inst->args_of.sel.t_clause = NODE_TYPE_NEW_FUNC_NAME(CodeNode)(t_clause);
+  inst->args_of.sel.f_clause = NODE_TYPE_NEW_FUNC_NAME(CodeNode)(f_clause);
   return inst;
 }
 
@@ -81,13 +81,6 @@ static Inst *inst_rtn(void) { return new_inst(INST_RTN); }
 void free_code(Inst *code) {
   Inst *next;
   for (Inst *cur = code; cur != NULL; cur = next) {
-    if (cur->tag == INST_LDF) {
-      free_code(cur->args_of.ldf.code);
-    }
-    if (cur->tag == INST_SEL) {
-      free_code(cur->args_of.sel.t_clause);
-      free_code(cur->args_of.sel.f_clause);
-    }
     next = cur->next;
     free(cur);
   }
@@ -123,7 +116,7 @@ void print_code(Inst *code, int level) {
         putchar(' ');
       }
       printf("code:\n");
-      print_code(cur->args_of.ldf.code, level + 1);
+      print_code(cur->args_of.ldf.code->value, level + 1);
       break;
     case INST_ARGS:
       printf("args %zu\n", cur->args_of.args.args_num);
@@ -140,12 +133,12 @@ void print_code(Inst *code, int level) {
         putchar(' ');
       }
       printf("then clause:\n");
-      print_code(cur->args_of.sel.t_clause, level + 1);
+      print_code(cur->args_of.sel.t_clause->value, level + 1);
       for (int i = 0; i < level; i++) {
         putchar(' ');
       }
       printf("else clause:\n");
-      print_code(cur->args_of.sel.f_clause, level + 1);
+      print_code(cur->args_of.sel.f_clause->value, level + 1);
       break;
     case INST_JOIN:
       printf("join\n");
@@ -160,17 +153,22 @@ void print_code(Inst *code, int level) {
   }
 }
 
-void code_collect_roots(Inst *code) {
-  for (Inst *cur = code; cur != NULL; cur = cur->next) {
+void code_collect_roots(CodeNode *code) {
+  mark_code_node(code);
+  for (Inst *cur = code->value; cur != NULL; cur = cur->next) {
     switch (cur->tag) {
     case INST_LDC:
       NODE_TYPE_NEW_FUNC_NAME(RootNode)(&cur->args_of.ldc.constant);
       break;
     case INST_LDF:
+      mark_code_node(cur->args_of.ldf.code);
       code_collect_roots(cur->args_of.ldf.code);
       break;
     case INST_SEL:
+      mark_code_node(cur->args_of.sel.t_clause);
       code_collect_roots(cur->args_of.sel.t_clause);
+
+      mark_code_node(cur->args_of.sel.f_clause);
       code_collect_roots(cur->args_of.sel.f_clause);
       break;
     default:
@@ -194,10 +192,10 @@ static size_t get_args_len(Object *obj) {
   return len - 1;
 }
 
-static Inst *compile_list(Object *list, Env *env, Inst *code);
-static Inst *compile_body(Object *body, Env *env, Inst *code);
+static Inst *compile_list(Object *list, EnvNode *env, Inst *code);
+static Inst *compile_body(Object *body, EnvNode *env, Inst *code);
 
-static Inst *compile_expr(Object *obj, Env *env, Inst *code) {
+static Inst *compile_expr(Object *obj, EnvNode *env, Inst *code) {
   switch (obj->tag) {
   case OBJ_BOOLEAN:
   case OBJ_INTEGER:
@@ -265,9 +263,9 @@ static Inst *compile_expr(Object *obj, Env *env, Inst *code) {
         if (CDR(obj) != NIL && CDR(CDR(obj)) != NIL) {
           Object *args = CAR(CDR(obj)), *body = CDR(CDR(obj));
 
-          Env *nenv = new_env();
-          nenv->vars = args;
-          nenv->next = env;
+          EnvNode *nenv = NODE_TYPE_NEW_FUNC_NAME(EnvNode)(new_env());
+          nenv->value->vars = args;
+          nenv->value->next = env;
 
           Inst *rtn_code = inst_rtn();
           Inst *body_code = compile_body(body, nenv, rtn_code);
@@ -312,7 +310,7 @@ static Inst *compile_expr(Object *obj, Env *env, Inst *code) {
   }
 }
 
-static Inst *compile_list(Object *list, Env *env, Inst *code) {
+static Inst *compile_list(Object *list, EnvNode *env, Inst *code) {
   if (list == NIL) {
     return code;
   } else {
@@ -326,7 +324,7 @@ static Inst *compile_list(Object *list, Env *env, Inst *code) {
   }
 }
 
-static Inst *compile_body(Object *body, Env *env, Inst *code) {
+static Inst *compile_body(Object *body, EnvNode *env, Inst *code) {
   switch (get_list_length(body)) {
     case 0:
       printf("prevent body to be empty by following code\n");
@@ -344,6 +342,6 @@ static Inst *compile_body(Object *body, Env *env, Inst *code) {
 
 Inst *compile(Object *ast) {
   Inst *stop_code = inst_stop();
-  Inst *result_code = compile_expr(ast, new_env(), stop_code);
+  Inst *result_code = compile_expr(ast, NODE_TYPE_NEW_FUNC_NAME(EnvNode)(new_env()), stop_code);
   return result_code;
 }

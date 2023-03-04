@@ -76,8 +76,6 @@ static void forward_roots(void) {
   RootNode *cur_root = get_roots();
 
   while (cur_root != NULL) {
-    print_obj(*cur_root->value);
-    putchar('\n');
     if (obj_is_in_gc_heap(*cur_root->value)) {
       size_t obj_size = sizeof(**cur_root->value);
       if (debug_flag) {
@@ -144,8 +142,6 @@ static void forward_non_roots(void) {
       }
       break;
     case OBJ_CLOSURE: {
-      mark_env_node(cur_obj->fields_of.closure.env_node);
-      mark_code_node(cur_obj->fields_of.closure.code_node);
       Object *vars = cur_obj->fields_of.closure.env_node->value->vars;
       if (vars->tag != OBJ_MOVED) {
         if (obj_is_in_gc_heap(vars)) {
@@ -157,7 +153,8 @@ static void forward_non_roots(void) {
       } else {
         cur_obj->fields_of.closure.env_node->value->vars = vars->fields_of.moved.address;
       }
-      code_collect_roots(cur_obj->fields_of.closure.code_node->value);
+      env_collect_roots(cur_obj->fields_of.closure.env_node);
+      code_collect_roots(cur_obj->fields_of.closure.code_node);
       forward_roots();
       break;
     }

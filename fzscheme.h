@@ -33,18 +33,18 @@ void DOUBLY_LINKED_LIST_CLEAR_FUNC_NAME(StringNode)(void);
 typedef struct Object Object;
 
 typedef struct Env Env;
+DEFINE_NODE_TYPE(EnvNode, Env *)
+
 struct Env {
   Object *vars;
-  Env *next;
+  EnvNode *next;
 };
 
 Env *new_env(void);
-void env_collect_roots(Env *env);
-int location(Env *env, Object *symbol, int *i, int *j);
-Object *get_lvar(Env *env, int i, int j);
-int set_lvar(Env *env, int i, int j, Object *val);
-
-DEFINE_NODE_TYPE(EnvNode, Env *)
+void env_collect_roots(EnvNode *env);
+int location(EnvNode *env, Object *symbol, int *i, int *j);
+Object *get_lvar(EnvNode *env, int i, int j);
+int set_lvar(EnvNode *env, int i, int j, Object *val);
 
 EnvNode *NODE_TYPE_NEW_FUNC_NAME(EnvNode)(Env * env);
 void mark_env_node(EnvNode *node);
@@ -149,7 +149,7 @@ struct Object {
   }
 
 Object *new_cell_obj(Object *car, Object *cdr);
-Object *new_closure_obj(Inst *code, Env *env);
+Object *new_closure_obj(CodeNode *code, EnvNode *env);
 Object *new_error_obj(char *message);
 Object *new_integer_obj(long value);
 Object *new_string_obj(char *value);
@@ -286,7 +286,7 @@ struct Inst {
     } ldg;
 
     struct {
-      Inst *code;
+      CodeNode *code;
     } ldf;
 
     struct {
@@ -294,15 +294,15 @@ struct Inst {
     } args;
 
     struct {
-      Inst *t_clause;
-      Inst *f_clause;
+      CodeNode *t_clause;
+      CodeNode *f_clause;
     } sel;
   } args_of;
 };
 
 void free_code(Inst *code);
 void print_code(Inst *code, int level);
-void code_collect_roots(Inst *code);
+void code_collect_roots(CodeNode *code);
 Inst *compile(Object *ast);
 
 CodeNode *NODE_TYPE_NEW_FUNC_NAME(CodeNode)(Inst *code);
