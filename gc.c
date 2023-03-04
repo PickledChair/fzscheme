@@ -52,20 +52,22 @@ static void forward_parser_roots(void) {
       size_t obj_size = sizeof(**cur_root->value);
       if (debug_flag) {
         print_obj(*cur_root->value);
-        printf(" object size: 0x%zx\n", obj_size);
+        printf(" object size: 0x%zx, address: %p\n", obj_size, *cur_root->value);
       }
       if (free_ptr + obj_size > TOP_PTR) {
         printf("memory error: shortage of memory\n");
         exit(1);
       }
 
-      if ((*cur_root->value)->tag != OBJ_MOVED) {
-        FORWARD(*cur_root->value);
+      if (!(to_space < (void *)*cur_root->value && (void *)*cur_root->value < to_space + extent)) {
+        if ((*cur_root->value)->tag != OBJ_MOVED) {
+          FORWARD(*cur_root->value);
 
-        *cur_root->value = free_ptr;
-        free_ptr += obj_size;
-      } else {
-        *cur_root->value = (*cur_root->value)->fields_of.moved.address;
+          *cur_root->value = free_ptr;
+          free_ptr += obj_size;
+        } else {
+          *cur_root->value = (*cur_root->value)->fields_of.moved.address;
+        }
       }
     }
     cur_root = cur_root->next;
@@ -80,20 +82,22 @@ static void forward_roots(void) {
       size_t obj_size = sizeof(**cur_root->value);
       if (debug_flag) {
         print_obj(*cur_root->value);
-        printf(" object size: 0x%zx\n", obj_size);
+        printf(" object size: 0x%zx, address: %p\n", obj_size, *cur_root->value);
       }
       if (free_ptr + obj_size > TOP_PTR) {
         printf("memory error: shortage of memory\n");
         exit(1);
       }
 
-      if ((*cur_root->value)->tag != OBJ_MOVED) {
-        FORWARD(*cur_root->value);
+      if (!(to_space < (void *)*cur_root->value && (void *)*cur_root->value < to_space + extent)) {
+        if ((*cur_root->value)->tag != OBJ_MOVED) {
+          FORWARD(*cur_root->value);
 
-        *cur_root->value = free_ptr;
-        free_ptr += obj_size;
-      } else {
-        *cur_root->value = (*cur_root->value)->fields_of.moved.address;
+          *cur_root->value = free_ptr;
+          free_ptr += obj_size;
+        } else {
+          *cur_root->value = (*cur_root->value)->fields_of.moved.address;
+        }
       }
     }
     cur_root = cur_root->next;
