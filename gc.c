@@ -33,6 +33,8 @@ void reset_gc_state(void) {
   (from_ref)->tag = OBJ_MOVED;                                                 \
   (from_ref)->fields_of.moved.address = free_ptr;
 
+#define TOSPACE_CONTAINS(ref) (to_space <= (void *)(ref) && (void *)(ref) < to_space + extent)
+
 static void flip(void) {
   void *to_space_tmp = to_space;
   to_space = from_space;
@@ -59,14 +61,27 @@ static void forward_parser_roots(void) {
         exit(1);
       }
 
-      if (!(to_space < (void *)*cur_root->value && (void *)*cur_root->value < to_space + extent)) {
+      if (!TOSPACE_CONTAINS(*cur_root->value)) {
         if ((*cur_root->value)->tag != OBJ_MOVED) {
           FORWARD(*cur_root->value);
 
           *cur_root->value = free_ptr;
           free_ptr += obj_size;
         } else {
+          if ((*cur_root->value)->fields_of.moved.address->tag == OBJ_MOVED) {
+            printf("!!! 2 times moved !!! ");
+            print_obj(*cur_root->value);
+            putchar('\n');
+            exit(1);
+          }
           *cur_root->value = (*cur_root->value)->fields_of.moved.address;
+        }
+      } else {
+        if ((*cur_root->value)->tag == OBJ_MOVED) {
+          printf("to_space contains moved object: %p, ", *cur_root->value);
+          print_obj(*cur_root->value);
+          putchar('\n');
+          exit(1);
         }
       }
     }
@@ -89,14 +104,27 @@ static void forward_roots(void) {
         exit(1);
       }
 
-      if (!(to_space < (void *)*cur_root->value && (void *)*cur_root->value < to_space + extent)) {
+      if (!TOSPACE_CONTAINS(*cur_root->value)) {
         if ((*cur_root->value)->tag != OBJ_MOVED) {
           FORWARD(*cur_root->value);
 
           *cur_root->value = free_ptr;
           free_ptr += obj_size;
         } else {
+          if ((*cur_root->value)->fields_of.moved.address->tag == OBJ_MOVED) {
+            printf("!!! 2 times moved !!! ");
+            print_obj(*cur_root->value);
+            putchar('\n');
+            exit(1);
+          }
           *cur_root->value = (*cur_root->value)->fields_of.moved.address;
+        }
+      } else {
+        if ((*cur_root->value)->tag == OBJ_MOVED) {
+          printf("to_space contains moved object: %p, ", *cur_root->value);
+          print_obj(*cur_root->value);
+          putchar('\n');
+          exit(1);
         }
       }
     }
@@ -122,40 +150,62 @@ static void forward_non_roots(void) {
     }
     switch (cur_obj->tag) {
     case OBJ_CELL:
-      if (CAR(cur_obj)->tag != OBJ_MOVED) {
-        if (obj_is_in_gc_heap(CAR(cur_obj))) {
-          FORWARD(CAR(cur_obj));
+      if (!TOSPACE_CONTAINS(CAR(cur_obj))) {
+        if (CAR(cur_obj)->tag != OBJ_MOVED) {
+          if (obj_is_in_gc_heap(CAR(cur_obj))) {
+            FORWARD(CAR(cur_obj));
 
-          CAR(cur_obj) = free_ptr;
-          free_ptr += sizeof(Object);
-        }
-      } else {
-        CAR(cur_obj) = CAR(cur_obj)->fields_of.moved.address;
-      }
-      if (CDR(cur_obj) != NIL) {
-        if (CDR(cur_obj)->tag != OBJ_MOVED) {
-          if (obj_is_in_gc_heap(CDR(cur_obj))) {
-            FORWARD(CDR(cur_obj));
-
-            CDR(cur_obj) = free_ptr;
+            CAR(cur_obj) = free_ptr;
             free_ptr += sizeof(Object);
           }
         } else {
-          CDR(cur_obj) = CDR(cur_obj)->fields_of.moved.address;
+          if (CAR(cur_obj)->fields_of.moved.address->tag == OBJ_MOVED) {
+            printf("invalid car object (2 times moved): %p, moved from %p, ", CAR(cur_obj), CAR(cur_obj)->fields_of.moved.address);
+            print_obj(CAR(cur_obj));
+            putchar('\n');
+            exit(1);
+          } else {
+            CAR(cur_obj) = CAR(cur_obj)->fields_of.moved.address;
+          }
+        }
+      } else {
+        if (CAR(cur_obj)->tag == OBJ_MOVED) {
+          if (CAR(cur_obj)->fields_of.moved.address->tag == OBJ_MOVED) {
+            printf("invalid car object: ");
+            print_obj(CAR(cur_obj));
+            putchar('\n');
+            exit(1);
+          }
+        }
+      }
+      if (!TOSPACE_CONTAINS(CDR(cur_obj))) {
+        if (CDR(cur_obj) != NIL) {
+          if (CDR(cur_obj)->tag != OBJ_MOVED) {
+            if (obj_is_in_gc_heap(CDR(cur_obj))) {
+              FORWARD(CDR(cur_obj));
+
+              CDR(cur_obj) = free_ptr;
+              free_ptr += sizeof(Object);
+            }
+          } else {
+            CDR(cur_obj) = CDR(cur_obj)->fields_of.moved.address;
+          }
         }
       }
       break;
     case OBJ_CLOSURE: {
       Object *vars = cur_obj->fields_of.closure.env_node->value->vars;
-      if (vars->tag != OBJ_MOVED) {
-        if (obj_is_in_gc_heap(vars)) {
-          FORWARD(vars);
+      if (!TOSPACE_CONTAINS(vars)) {
+        if (vars->tag != OBJ_MOVED) {
+          if (obj_is_in_gc_heap(vars)) {
+            FORWARD(vars);
 
-          cur_obj->fields_of.closure.env_node->value->vars = free_ptr;
-          free_ptr += sizeof(Object);
+            cur_obj->fields_of.closure.env_node->value->vars = free_ptr;
+            free_ptr += sizeof(Object);
+          }
+        } else {
+          cur_obj->fields_of.closure.env_node->value->vars = vars->fields_of.moved.address;
         }
-      } else {
-        cur_obj->fields_of.closure.env_node->value->vars = vars->fields_of.moved.address;
       }
       env_collect_roots(cur_obj->fields_of.closure.env_node);
       code_collect_roots(cur_obj->fields_of.closure.code_node);
@@ -166,35 +216,50 @@ static void forward_non_roots(void) {
       mark_vector_node(cur_obj->fields_of.vector.vec_node);
       for (size_t i = 0; i < cur_obj->fields_of.vector.size; i++) {
         Object *indexed_obj = cur_obj->fields_of.vector.vec_node->value[i];
-        if (indexed_obj->tag != OBJ_MOVED) {
-          if (obj_is_in_gc_heap(indexed_obj)) {
-            FORWARD(indexed_obj);
+        if (!TOSPACE_CONTAINS(indexed_obj)) {
+          if (indexed_obj->tag != OBJ_MOVED) {
+            if (obj_is_in_gc_heap(indexed_obj)) {
+              FORWARD(indexed_obj);
 
-            cur_obj->fields_of.vector.vec_node->value[i] = free_ptr;
-            free_ptr += sizeof(Object);
+              cur_obj->fields_of.vector.vec_node->value[i] = free_ptr;
+              free_ptr += sizeof(Object);
+            }
+          } else {
+            cur_obj->fields_of.vector.vec_node->value[i] = indexed_obj->fields_of.moved.address;
           }
-        } else {
-          cur_obj->fields_of.vector.vec_node->value[i] = indexed_obj->fields_of.moved.address;
         }
       }
       break;
     case OBJ_STRING:
       mark_string_node(cur_obj->fields_of.string.str_node);
       break;
+    case OBJ_MOVED:
+      printf("invalid moved object: ");
+      print_obj(cur_obj);
+      putchar('\n');
+      exit(1);
     default:
       break;
     }
   }
   if (debug_flag) {
+    for (void *p = to_space; p < free_ptr; p += sizeof(Object)) {
+      if (((Object *)p)->tag == OBJ_MOVED) {
+        printf("failed to move: ");
+        print_obj((Object *)p);
+        putchar('\n');
+        exit(1);
+      }
+    }
     printf("finish scanning\n");
   }
 }
 
 void fzscm_gc(void) {
-  if (gc_occured_before_reset_gc_state) {
-    printf("gc error: there are some new objects those are not in root set\n");
-    exit(1);
-  }
+  // if (gc_occured_before_reset_gc_state) {
+  //   printf("gc error: there are some new objects those are not in root set\n");
+  //   exit(1);
+  // }
   memset(from_space, 0, extent);
 
   // flip 処理
